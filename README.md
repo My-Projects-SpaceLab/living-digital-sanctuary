@@ -44,12 +44,11 @@ Write something. Anything. Stop after a couple of minutes and just watch what ha
 
 This isn't a vibe project. Everything in it has a research basis:
 
-- **Attention Restoration Theory** (Kaplan & Kaplan, 1989) — slow, organic, non-demanding motion lets the directed attention system actually recover. The same reason you feel better after sitting near water.
-- **Stress Recovery Theory** (Ulrich, 1984) — natural color ranges and biophilic visual patterns measurably reduce cortisol within minutes.
-- **Calm Technology** (Weiser & Brown, Xerox PARC, 1995) — technology should live in the periphery, shift to center only when needed, then return.
-- **Biocybernetic interfaces** — typing speed is a reliable passive signal of cognitive state. Adapting visual complexity to it produces real focus improvements.
-
-This is that attempt to put all four of these together in one interface.
+- **Attention Restoration Theory** — slow, natural patterns help the brain recover focus
+- **Stress Recovery Theory** — calm, organic visuals reduce mental load
+- **Calm Technology** — systems should stay in the background until needed
+- **Biocybernetic interfaces** — typing rhythm can reflect cognitive state
+Nothing here is new. The combination is.
 
 ---
 
