@@ -1,0 +1,144 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body,
+html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #020406;
+    font-family: 'Outfit', sans-serif;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#workspace-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+#editor-card {
+    width: 90%;
+    max-width: 650px;
+    height: 60%;
+    background: rgba(8, 12, 18, 0.65);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), background 1s, border-color 1s;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+    opacity: 1;
+}
+
+#editor-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 20px;
+    outline: none;
+    border: none;
+    background: transparent;
+    font-style: italic;
+}
+
+#editor-textarea {
+    width: 100%;
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+    line-height: 1.8;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+}
+
+#editor-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+}
+
+#hud {
+    position: fixed;
+    top: 30px;
+    left: 40px;
+    z-index: 10;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    line-height: 2;
+    pointer-events: none;
+    user-select: none;
+}
+
+#hud span {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 400;
+}
+
+#state-label {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    color: rgba(255, 255, 255, 0.15);
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    pointer-events: none;
+    transition: color 1s;
+    user-select: none;
+    font-style: italic;
+}
+
+#share-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+    pointer-events: auto;
+}
+
+#share-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+}
