@@ -2,9 +2,11 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const label = document.getElementById('state-label');
 const card = document.getElementById('editor-card');
+
 const hudState = document.getElementById('hud-state');
 const hudSpeed = document.getElementById('hud-speed');
 const hudIdle = document.getElementById('hud-idle');
+
 const textarea = document.getElementById('editor-textarea');
 
 let W = 0, H = 0;
@@ -59,9 +61,13 @@ function updateState() {
     if (stateBlend < 0.25) {
         stateName = 'flow';
         card.style.transform = 'scale(1)';
+        card.style.background = 'rgba(8, 12, 18, 0.65)';
+        card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
     } else if (stateBlend < 0.7) {
         stateName = 'drift';
         card.style.transform = 'scale(0.98)';
+        card.style.background = 'rgba(8, 12, 18, 0.4)';
+        card.style.borderColor = 'rgba(255, 255, 255, 0.04)';
     } else {
         stateName = 'restore';
         card.style.transform = 'scale(0.96)';
@@ -73,35 +79,84 @@ function updateState() {
     }
 }
 
-// Particle Engine
+function fieldAngle(x, y, t) {
+    const sc = 0.0012 + stateBlend * 0.0004;
+    return Math.sin(x * sc + t * 0.25) * Math.PI + Math.cos(y * sc + t * 0.18) * Math.PI + Math.sin((x + y) * sc * 0.6 + t * 0.12) * Math.PI * 0.5;
+}
+
+function particleColor(hueVariant, alpha) {
+    let h = (stateBlend < 0.5) ? 205 + (140 - 205) * (stateBlend / 0.5) : 140 + (26 - 140) * ((stateBlend - 0.5) / 0.5);
+    h += hueVariant * 16 - 8;
+    return `hsla(${h.toFixed(0)}, ${76 - stateBlend * 12}%, ${50 + stateBlend * 12}%, ${alpha.toFixed(3)})`;
+}
+
 const PARTICLE_COUNT = 850;
-let particles = [];
+const TAIL_LEN = 28;
 class Particle {
-    constructor() { this.init(); }
-    init() {
-        this.x = Math.random() * W;
-        this.y = Math.random() * H;
-        this.life = Math.random() * 500;
+    constructor() { this.init(true); }
+    init(scatter) {
+        this.x = scatter ? Math.random() * W : (Math.random() < 0.5 ? -10 : W + 10);
+        this.y = scatter ? Math.random() * H : Math.random() * H;
+        this.vx = 0; this.vy = 0; this.spd = 0.4 + Math.random() * 0.9;
+        this.life = 0; this.maxL = 220 + Math.random() * 380;
+        this.hv = Math.random(); this.sz = 0.7 + Math.random() * 1.5;
+        this.trail = [];
     }
-    update() {
-        this.life--;
-        if (this.life <= 0) this.init();
+    update(t) {
+        this.life++;
+        const sm = 1.0 - stateBlend * 0.5;
+        const ang = fieldAngle(this.x, this.y, t);
+        this.vx += Math.cos(ang) * 0.08 * sm; this.vy += Math.sin(ang) * 0.08 * sm;
+        const damp = 0.92 + stateBlend * 0.045;
+        this.vx *= damp; this.vy *= damp;
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > TAIL_LEN) this.trail.shift();
+        this.x += this.vx * this.spd; this.y += this.vy * this.spd;
+        if (this.life > this.maxL || this.x < -80 || this.x > W + 80 || this.y < -80 || this.y > H + 80) this.init(false);
     }
     draw() {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
-        ctx.fill();
+        if (this.trail.length < 2) return;
+        const lifeA = Math.min(1, this.life / 40) * Math.min(1, (this.maxL - this.life) / 40);
+        for (let i = 1; i < this.trail.length; i++) {
+            const t = i / this.trail.length;
+            const alp = t * lifeA * (0.28 + stateBlend * 0.16);
+            ctx.beginPath();
+            ctx.strokeStyle = particleColor(this.hv, alp);
+            ctx.lineWidth = t * this.sz * 1.5;
+            ctx.lineCap = 'round';
+            ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y);
+            ctx.lineTo(this.trail[i].x, this.trail[i].y);
+            ctx.stroke();
+        }
     }
 }
 
+let particles = [];
 for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
 
+let breathPhase = 0;
+function drawBreath() {
+    const vis = Math.max(0, (stateBlend - 0.25) / 0.75);
+    if (vis <= 0) return;
+    breathPhase += 0.005;
+    const pulse = Math.sin(breathPhase) * 0.5 + 0.5;
+    const grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.min(W, H) * (0.22 + pulse * 0.12));
+    grd.addColorStop(0, `hsla(${26 + stateBlend * 10}, 65%, 65%, ${(vis * 0.06 * pulse).toFixed(3)})`);
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grd; ctx.arc(W / 2, H / 2, Math.min(W, H), 0, Math.PI * 2); ctx.fill();
+}
+
+let t = 0;
 function loop() {
-    ctx.fillStyle = 'rgba(2, 4, 6, 0.2)';
+    t += 0.004; updateState();
+    ctx.fillStyle = `rgba(2, 4, 6, ${0.038 + (1 - stateBlend) * 0.035})`;
     ctx.fillRect(0, 0, W, H);
-    updateState();
-    particles.forEach(p => { p.update(); p.draw(); });
+    const active = Math.floor(PARTICLE_COUNT * (0.8 + (1 - stateBlend) * 0.2));
+    for (let i = 0; i < active; i++) { particles[i].update(t); particles[i].draw(); }
+    drawBreath();
+    const grd = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
+    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, `rgba(2, 4, 6, ${(0.45 + stateBlend * 0.2).toFixed(2)})`);
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     requestAnimationFrame(loop);
 }
-loop();
+loop(); // <--- THIS IS THE LINE THAT STARTS EVERYTHING
