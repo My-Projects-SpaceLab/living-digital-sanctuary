@@ -252,7 +252,23 @@ function loop() {
 }
 loop();
 
-// ── SHARE SPACE SIMULATOR ────────────────────────────────────────
-document.getElementById('share-btn').addEventListener('click', () => {
-    alert("Simulation: Custom space saved! Your link: \n\nfile:///C:/Users/varal/Desktop/sanctuary.html?state=" + stateName);
+// ── SHARE SPACE ──────────
+document.getElementById('share-btn').addEventListener('click', async () => {
+    const shareData = {
+        title: "My Digital Sanctuary",
+        text: "I am in a state of " + stateName + ". Experience the flow.",
+        url: window.location.href
+    };
+
+    try {
+        if (navigator.share) {
+            await navigator.share(shareData);
+            console.log("Sanctuary shared successfully");
+        } else {
+            // Fallback for browsers that don't support Web Share API
+            alert("Copy this link to share your space: " + window.location.href);
+        }
+    } catch (err) {
+        console.error("Error sharing:", err);
+    }
 });
