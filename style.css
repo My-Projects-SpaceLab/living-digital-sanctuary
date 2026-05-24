@@ -1,35 +1,36 @@
-* {
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body,
-html {
+body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
     background: #020406;
     font-family: 'Outfit', sans-serif;
+    opacity: 0;
+    animation: fadeIn 2.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
 }
 
 canvas {
     display: block;
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 0; left: 0;
     z-index: 1;
 }
 
 #workspace-container {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     z-index: 2;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     pointer-events: none;
@@ -37,31 +38,40 @@ canvas {
 
 #editor-card {
     width: 90%;
-    max-width: 650px;
-    height: 60%;
-    background: rgba(8, 12, 18, 0.65);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    max-width: 640px;
+    height: 58%;
+    background: rgba(8, 12, 18, 0.6);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255,255,255,0.07);
     border-radius: 24px;
-    padding: 40px;
+    padding: 40px 44px;
     display: flex;
     flex-direction: column;
     pointer-events: auto;
-    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), background 1s, border-color 1s;
-    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+    transition:
+        transform 4s cubic-bezier(0.16, 1, 0.3, 1),
+        background 4s ease,
+        border-color 4s ease,
+        opacity 4s ease;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     opacity: 1;
 }
 
 #editor-title {
     font-family: 'Playfair Display', serif;
-    font-size: 24px;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 20px;
+    font-size: 22px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 22px;
     outline: none;
     border: none;
     background: transparent;
     font-style: italic;
+    transition: color 3s ease;
+}
+
+#editor-title::placeholder {
+    color: rgba(255,255,255,0.2);
 }
 
 #editor-textarea {
@@ -71,74 +81,199 @@ canvas {
     border: none;
     outline: none;
     resize: none;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255,255,255,0.8);
     font-size: 16px;
-    line-height: 1.8;
+    line-height: 1.9;
     font-family: 'Outfit', sans-serif;
     font-weight: 300;
+    transition: color 3s ease;
 }
 
 #editor-textarea::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255,255,255,0.22);
     font-style: italic;
 }
 
+/* HUD — ghost until hover */
 #hud {
     position: fixed;
-    top: 30px;
-    left: 40px;
+    bottom: 28px;
+    left: 36px;
     z-index: 10;
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 11px;
-    letter-spacing: 2px;
+    color: rgba(255,255,255,0.0);
+    font-size: 10px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    line-height: 2;
     pointer-events: none;
     user-select: none;
+    transition: color 1.2s ease;
 }
 
-#hud span {
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 400;
+body:hover #hud {
+    color: rgba(255,255,255,0.18);
 }
 
+/* State label — barely there */
 #state-label {
     position: fixed;
-    bottom: 30px;
+    bottom: 28px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    color: rgba(255, 255, 255, 0.15);
+    color: rgba(255,255,255,0.06);
     font-family: 'Playfair Display', serif;
-    font-size: 13px;
-    letter-spacing: 8px;
+    font-size: 11px;
+    letter-spacing: 0.55em;
     text-transform: uppercase;
     pointer-events: none;
-    transition: color 1s;
+    transition: color 6s ease;
     user-select: none;
     font-style: italic;
 }
 
+/* Share button — fades in after delay via JS class */
 #share-btn {
     position: fixed;
-    bottom: 30px;
-    right: 40px;
+    bottom: 26px;
+    right: 36px;
     z-index: 10;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.6);
-    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.0);
+    color: rgba(255,255,255,0.0);
+    padding: 9px 20px;
     border-radius: 30px;
-    font-size: 11px;
-    letter-spacing: 2px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background 0.3s, color 0.3s, border-color 0.3s;
+    font-family: 'Outfit', sans-serif;
+    transition:
+        background 0.4s ease,
+        color 0.4s ease,
+        border-color 0.4s ease,
+        opacity 2s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#share-btn.visible {
+    opacity: 1;
     pointer-events: auto;
+    border-color: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.35);
 }
 
 #share-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8);
+    border-color: rgba(255,255,255,0.15);
+}
+
+/* About link — corner, very quiet */
+#about-link {
+    position: fixed;
+    top: 26px;
+    right: 36px;
+    z-index: 10;
+    color: rgba(255,255,255,0.0);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.4s ease;
+    pointer-events: none;
+    opacity: 0;
+}
+
+#about-link.visible {
+    opacity: 1;
+    pointer-events: auto;
+    color: rgba(255,255,255,0.2);
+}
+
+#about-link:hover {
+    color: rgba(255,255,255,0.65);
+}
+
+/* Prompt overlay */
+#prompt-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 3s ease;
+}
+
+#prompt-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#prompt-question {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+    line-height: 1.7;
+    font-style: italic;
+    letter-spacing: 0.02em;
+}
+
+#prompt-choices {
+    display: flex;
+    gap: 16px;
+}
+
+#prompt-choices button,
+#share-card button {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+
+#prompt-choices button:hover,
+#share-card button:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.95);
+    border-color: rgba(255,255,255,0.2);
+}
+
+#share-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+}
+
+#share-card p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.05em;
+}
+
+#share-url {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px !important;
+    color: rgba(255,255,255,0.7) !important;
+    font-style: italic;
+}
+
+#share-card .btn-row {
+    display: flex;
+    gap: 12px;
 }
