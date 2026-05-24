@@ -2,31 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Living Digital Sanctuary</title>
+    <meta name="description" content="A living space that breathes with you. No login. No notifications. Just restoration.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div id="hud">
-        State: <span id="hud-state">Flow</span><br>
-        Typing Speed: <span id="hud-speed">0</span> cpm<br>
-        Idle Time: <span id="hud-idle">0</span>s
-    </div>
+    <canvas id="canvas"></canvas>
 
     <div id="workspace-container">
         <div id="editor-card">
-            <input type="text" id="editor-title" placeholder="Untitled Sanctuary Note...">
-            <textarea id="editor-textarea" placeholder="Start typing your thoughts here... Observe how the background field breathes and shifts colors depending on how fast or slow you type. Stop typing for 5 seconds to enter deep restoration."></textarea>
+            <input type="text" id="editor-title" placeholder="Untitled note...">
+            <textarea id="editor-textarea" placeholder="Begin writing, or simply stay."></textarea>
         </div>
     </div>
 
     <div id="state-label">flow</div>
-    <button id="share-btn">Share Space</button>
 
-    <canvas id="canvas"></canvas>
+    <div id="hud">
+        <span id="hud-state">Flow</span> &nbsp;·&nbsp;
+        <span id="hud-speed">0</span> cpm &nbsp;·&nbsp;
+        <span id="hud-idle">0</span>s
+    </div>
+
+    <button id="share-btn" aria-label="Share this space">share this space</button>
+
+    <div id="prompt-overlay" aria-live="polite">
+        <p id="prompt-question">You've been here a while.<br>How do you feel?</p>
+        <div id="prompt-choices">
+            <button id="btn-clearer">Clearer</button>
+            <button id="btn-notsure">Not sure yet</button>
+        </div>
+        <div id="share-card" hidden>
+            <p>Something real, no sign-up needed.</p>
+            <p id="share-url">livingdigitalsanctuary.space</p>
+            <button id="btn-copy-link">Copy link</button>
+            <button id="btn-native-share">Share →</button>
+        </div>
+    </div>
+
+    <a id="about-link" href="https://github.com/My-Projects-SpaceLab/living-digital-sanctuary" target="_blank" rel="noopener">about</a>
 
     <script src="script.js"></script>
 </body>
