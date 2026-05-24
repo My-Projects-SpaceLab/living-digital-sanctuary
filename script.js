@@ -64,7 +64,7 @@ setTimeout(() => {
         promptShown = true;
         promptOverlay.classList.add('visible');
     }
-}, 10 * 60 * 1000);
+},   60 * 1000);
 
 btnClearer.addEventListener('click', () => {
     document.getElementById('prompt-question').style.display = 'none';
