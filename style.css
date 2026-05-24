@@ -1,22 +1,17 @@
 *, *::before, *::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    margin: 0; padding: 0; box-sizing: border-box;
 }
 
 body, html {
-    width: 100%;
-    height: 100%;
+    width: 100%; height: 100%;
     overflow: hidden;
     background: #020406;
     font-family: 'Outfit', sans-serif;
     opacity: 0;
-    animation: fadeIn 2.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+    animation: bodyFadeIn 2.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
 }
 
-@keyframes fadeIn {
-    to { opacity: 1; }
-}
+@keyframes bodyFadeIn { to { opacity: 1; } }
 
 canvas {
     display: block;
@@ -40,106 +35,107 @@ canvas {
     width: 90%;
     max-width: 640px;
     height: 58%;
-    background: rgba(8, 12, 18, 0.6);
+    background: rgba(8, 12, 18, 0.60);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 24px;
     padding: 40px 44px;
     display: flex;
     flex-direction: column;
     pointer-events: auto;
     transition:
-        transform 4s cubic-bezier(0.16, 1, 0.3, 1),
-        background 4s ease,
-        border-color 4s ease,
-        opacity 4s ease;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
-    opacity: 1;
+        transform 5s cubic-bezier(0.16, 1, 0.3, 1),
+        background 5s ease,
+        border-color 5s ease;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
 }
 
 #editor-title {
     font-family: 'Playfair Display', serif;
     font-size: 22px;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255, 255, 255, 0.85);
     margin-bottom: 22px;
     outline: none;
     border: none;
     background: transparent;
     font-style: italic;
-    transition: color 3s ease;
+    transition: color 4s ease;
+    width: 100%;
 }
 
-#editor-title::placeholder {
-    color: rgba(255,255,255,0.2);
-}
+#editor-title::placeholder { color: rgba(255, 255, 255, 0.18); }
 
 #editor-textarea {
-    width: 100%;
-    flex-grow: 1;
+    width: 100%; flex-grow: 1;
     background: transparent;
-    border: none;
-    outline: none;
-    resize: none;
-    color: rgba(255,255,255,0.8);
+    border: none; outline: none; resize: none;
+    color: rgba(255, 255, 255, 0.78);
     font-size: 16px;
-    line-height: 1.9;
+    line-height: 1.95;
     font-family: 'Outfit', sans-serif;
     font-weight: 300;
-    transition: color 3s ease;
+    transition: color 4s ease;
 }
 
 #editor-textarea::placeholder {
-    color: rgba(255,255,255,0.22);
+    color: rgba(255, 255, 255, 0.28);
     font-style: italic;
+    transition: color 0.9s ease;
 }
 
-/* HUD — ghost until hover */
+/* JS adds this class to fade placeholder during cycling */
+#editor-textarea.placeholder-fade::placeholder {
+    color: rgba(255, 255, 255, 0.0);
+}
+
+/* ── HUD — TOP LEFT ─────────────────────────────────────────── */
 #hud {
     position: fixed;
-    bottom: 28px;
+    top: 28px;
     left: 36px;
     z-index: 10;
-    color: rgba(255,255,255,0.0);
-    font-size: 10px;
-    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 11px;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
+    line-height: 2.0;
     pointer-events: none;
     user-select: none;
-    transition: color 1.2s ease;
 }
 
-body:hover #hud {
-    color: rgba(255,255,255,0.18);
+#hud span {
+    color: rgba(255, 255, 255, 0.62);
+    font-weight: 400;
 }
 
-/* State label — barely there */
+/* ── STATE LABEL — BOTTOM CENTER ───────────────────────────── */
 #state-label {
     position: fixed;
     bottom: 28px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    color: rgba(255,255,255,0.06);
+    color: rgba(255, 255, 255, 0.07);
     font-family: 'Playfair Display', serif;
     font-size: 11px;
-    letter-spacing: 0.55em;
+    letter-spacing: 0.5em;
     text-transform: uppercase;
     pointer-events: none;
-    transition: color 6s ease;
+    transition: color 8s ease;
     user-select: none;
     font-style: italic;
 }
 
-/* Share button — fades in after delay via JS class */
+/* ── SHARE BUTTON — BOTTOM RIGHT ───────────────────────────── */
 #share-btn {
     position: fixed;
     bottom: 26px;
     right: 36px;
     z-index: 10;
     background: transparent;
-    border: 1px solid rgba(255,255,255,0.0);
-    color: rgba(255,255,255,0.0);
+    border: 1px solid rgba(255, 255, 255, 0.0);
+    color: rgba(255, 255, 255, 0.0);
     padding: 9px 20px;
     border-radius: 30px;
     font-size: 10px;
@@ -147,99 +143,93 @@ body:hover #hud {
     text-transform: uppercase;
     cursor: pointer;
     font-family: 'Outfit', sans-serif;
-    transition:
-        background 0.4s ease,
-        color 0.4s ease,
-        border-color 0.4s ease,
-        opacity 2s ease;
     opacity: 0;
     pointer-events: none;
+    transition: background 0.4s, color 0.4s, border-color 0.4s, opacity 2.5s ease;
 }
 
 #share-btn.visible {
     opacity: 1;
     pointer-events: auto;
-    border-color: rgba(255,255,255,0.07);
-    color: rgba(255,255,255,0.35);
+    border-color: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.30);
 }
 
 #share-btn:hover {
-    background: rgba(255,255,255,0.06);
-    color: rgba(255,255,255,0.8);
-    border-color: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.88);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
-/* About link — corner, very quiet */
+/* ── ABOUT LINK — TOP RIGHT ─────────────────────────────────── */
 #about-link {
     position: fixed;
-    top: 26px;
+    top: 28px;
     right: 36px;
     z-index: 10;
-    color: rgba(255,255,255,0.0);
     font-size: 10px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     text-decoration: none;
-    transition: color 0.4s ease;
-    pointer-events: none;
     opacity: 0;
+    pointer-events: none;
+    color: rgba(255, 255, 255, 0.0);
+    transition: color 0.4s, opacity 2.5s ease;
 }
 
 #about-link.visible {
     opacity: 1;
     pointer-events: auto;
-    color: rgba(255,255,255,0.2);
+    color: rgba(255, 255, 255, 0.20);
 }
 
-#about-link:hover {
-    color: rgba(255,255,255,0.65);
-}
+#about-link:hover { color: rgba(255, 255, 255, 0.72); }
 
-/* Prompt overlay */
+/* ── PROMPT OVERLAY ──────────────────────────────────────────── */
 #prompt-overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    z-index: 20;
+    z-index: 30;
+    background: rgba(2, 4, 6, 0.0);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 28px;
+    gap: 32px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 3s ease;
+    transition: opacity 4s ease, background 4s ease;
 }
 
 #prompt-overlay.visible {
     opacity: 1;
     pointer-events: auto;
+    background: rgba(2, 4, 6, 0.90);
 }
 
 #prompt-question {
     font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    color: rgba(255,255,255,0.7);
+    font-size: 26px;
+    color: rgba(255, 255, 255, 0.62);
     text-align: center;
-    line-height: 1.7;
+    line-height: 1.75;
     font-style: italic;
     letter-spacing: 0.02em;
+    max-width: 440px;
 }
 
-#prompt-choices {
-    display: flex;
-    gap: 16px;
-}
+#prompt-choices { display: flex; gap: 16px; }
 
 #prompt-choices button,
 #share-card button {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.6);
-    padding: 12px 28px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.52);
+    padding: 13px 30px;
     border-radius: 30px;
     font-size: 13px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.10em;
     font-family: 'Outfit', sans-serif;
     cursor: pointer;
     transition: background 0.3s, color 0.3s, border-color 0.3s;
@@ -247,33 +237,52 @@ body:hover #hud {
 
 #prompt-choices button:hover,
 #share-card button:hover {
-    background: rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.95);
-    border-color: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.20);
 }
 
 #share-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     text-align: center;
+    animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-#share-card p {
-    font-size: 14px;
-    color: rgba(255,255,255,0.45);
-    letter-spacing: 0.05em;
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.share-intro {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.04em;
+    line-height: 1.75;
 }
 
 #share-url {
     font-family: 'Playfair Display', serif;
-    font-size: 18px !important;
-    color: rgba(255,255,255,0.7) !important;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.62);
     font-style: italic;
 }
 
-#share-card .btn-row {
-    display: flex;
-    gap: 12px;
+.btn-row { display: flex; gap: 12px; }
+
+button.dismiss {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.20);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 6px 0;
+    font-family: 'Outfit', sans-serif;
+    transition: color 0.3s;
 }
+
+button.dismiss:hover { color: rgba(255, 255, 255, 0.62); }
