@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Living Digital Sanctuary</title>
-    <meta name="description" content="A living space that breathes with you. No login. No notifications. Just restoration.">
-    <meta property="og:title" content="Living Digital Sanctuary">
-    <meta property="og:description" content="A screen that restores you. No sign-up. Just open it.">
+    <meta name="description" content="A screen that restores you. No login. No notifications. Just open it.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
@@ -15,46 +13,58 @@
 <body>
     <canvas id="canvas"></canvas>
 
-    <!-- HUD — top right, always there for video recording -->
+    <!-- HUD top left -->
     <div id="hud">
         State: <span id="hud-state">Flow</span><br>
         Typing: <span id="hud-speed">0</span> cpm<br>
-        Idle: <span id="hud-idle">0</span>s
+        Idle: <span id="hud-idle">0s</span>
     </div>
 
-    <!-- Main editor -->
+    <!-- About link top right — fades in after 30s -->
+    <a id="about-link" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/about.html">about</a>
+
+    <!-- Editor -->
     <div id="workspace-container">
         <div id="editor-card">
             <input type="text" id="editor-title" placeholder="Untitled note...">
-            <textarea id="editor-textarea" placeholder="Begin writing, or simply stay."></textarea>
+            <textarea id="editor-textarea"></textarea>
         </div>
     </div>
 
-    <!-- State label bottom center -->
+    <!-- State label bottom centre -->
     <div id="state-label">flow</div>
 
     <!-- Share button bottom right — fades in after 30s -->
-    <button id="share-btn" aria-label="Share this space">share this space</button>
+    <button id="share-btn">share this space</button>
 
-    <!-- About link top left — fades in after 30s -->
-    <a id="about-link" href="https://github.com/My-Projects-SpaceLab/living-digital-sanctuary" target="_blank" rel="noopener">about</a>
+    <!-- 5-min prompt overlay -->
+    <div id="prompt-overlay" role="dialog">
 
-    <!-- 5-minute prompt overlay — covers and hides editor -->
-    <div id="prompt-overlay" aria-live="polite" role="dialog" aria-modal="true">
         <p id="prompt-question">You've been here a while.<br>How do you feel?</p>
+
         <div id="prompt-choices">
-            <button id="btn-clearer">Clearer</button>
+            <button class="prompt-choice-btn" id="btn-better">Feeling better</button>
+            <button class="prompt-choice-btn" id="btn-calm">Calm</button>
             <button id="btn-notsure">Not sure yet</button>
         </div>
+
+        <!-- Comment field — shown after Feeling better / Calm -->
+        <div id="prompt-comment">
+            <textarea id="comment-text" placeholder="Anything you want to say about it — or nothing at all."></textarea>
+            <button id="btn-submit-comment">Continue →</button>
+        </div>
+
+        <!-- Share card -->
         <div id="share-card" hidden>
-            <p class="share-intro">Something quiet, for someone you care about.</p>
-            <p id="share-url">livingdigitalsanctuary.space</p>
+            <p class="share-intro">Something peaceful, for someone you care about.</p>
+            <p id="share-url">living-digital-sanctuary.space</p>
             <div class="btn-row">
                 <button id="btn-copy-link">Copy link</button>
                 <button id="btn-native-share">Share →</button>
             </div>
             <button id="btn-dismiss" class="dismiss">Close</button>
         </div>
+
     </div>
 
     <script src="script.js"></script>
