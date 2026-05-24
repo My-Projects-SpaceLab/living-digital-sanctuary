@@ -1,288 +1,176 @@
-*, *::before, *::after {
-    margin: 0; padding: 0; box-sizing: border-box;
-}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 body, html {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: #020406;
-    font-family: 'Outfit', sans-serif;
-    opacity: 0;
-    animation: bodyFadeIn 2.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+    width:100%; height:100%;
+    overflow:hidden;
+    background:#020406;
+    font-family:'Outfit',sans-serif;
+    opacity:0;
+    animation:bodyIn 2.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
 }
+@keyframes bodyIn { to { opacity:1; } }
 
-@keyframes bodyFadeIn { to { opacity: 1; } }
+canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
 
-canvas {
-    display: block;
-    position: absolute;
-    top: 0; left: 0;
-    z-index: 1;
-}
-
+/* ── WORKSPACE ── */
 #workspace-container {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    z-index:2; display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
 }
-
 #editor-card {
-    width: 90%;
-    max-width: 640px;
-    height: 58%;
-    background: rgba(8, 12, 18, 0.60);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 24px;
-    padding: 40px 44px;
-    display: flex;
-    flex-direction: column;
-    pointer-events: auto;
-    transition:
-        transform 5s cubic-bezier(0.16, 1, 0.3, 1),
-        background 5s ease,
-        border-color 5s ease;
-    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+    width:90%; max-width:640px; height:58%;
+    background:rgba(8,12,18,0.60);
+    backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:24px; padding:40px 44px;
+    display:flex; flex-direction:column;
+    pointer-events:auto;
+    transition: transform 5s cubic-bezier(0.16,1,0.3,1), background 5s ease, border-color 5s ease;
+    box-shadow:0 40px 80px rgba(0,0,0,0.5);
 }
-
 #editor-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    color: rgba(255, 255, 255, 0.85);
-    margin-bottom: 22px;
-    outline: none;
-    border: none;
-    background: transparent;
-    font-style: italic;
-    transition: color 4s ease;
-    width: 100%;
+    font-family:'Playfair Display',serif; font-size:22px;
+    color:rgba(255,255,255,0.85); margin-bottom:22px;
+    outline:none; border:none; background:transparent;
+    font-style:italic; width:100%;
 }
-
-#editor-title::placeholder { color: rgba(255, 255, 255, 0.18); }
-
+#editor-title::placeholder { color:rgba(255,255,255,0.18); }
 #editor-textarea {
-    width: 100%; flex-grow: 1;
-    background: transparent;
-    border: none; outline: none; resize: none;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 16px;
-    line-height: 1.95;
-    font-family: 'Outfit', sans-serif;
-    font-weight: 300;
-    transition: color 4s ease;
+    width:100%; flex-grow:1; background:transparent;
+    border:none; outline:none; resize:none;
+    color:rgba(255,255,255,0.78); font-size:16px; line-height:1.95;
+    font-family:'Outfit',sans-serif; font-weight:300;
 }
-
 #editor-textarea::placeholder {
-    color: rgba(255, 255, 255, 0.28);
-    font-style: italic;
-    transition: color 0.9s ease;
+    color:rgba(255,255,255,0.28); font-style:italic;
+    transition:color 0.9s ease;
 }
+#editor-textarea.placeholder-fade::placeholder { color:rgba(255,255,255,0); }
 
-/* JS adds this class to fade placeholder during cycling */
-#editor-textarea.placeholder-fade::placeholder {
-    color: rgba(255, 255, 255, 0.0);
-}
-
-/* ── HUD — TOP LEFT ─────────────────────────────────────────── */
+/* ── HUD top left ── */
 #hud {
-    position: fixed;
-    top: 28px;
-    left: 36px;
-    z-index: 10;
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    line-height: 2.0;
-    pointer-events: none;
-    user-select: none;
+    position:fixed; top:28px; left:36px; z-index:10;
+    color:rgba(255,255,255,0.25); font-size:11px;
+    letter-spacing:0.16em; text-transform:uppercase;
+    line-height:2; pointer-events:none; user-select:none;
 }
+#hud span { color:rgba(255,255,255,0.62); font-weight:400; }
 
-#hud span {
-    color: rgba(255, 255, 255, 0.62);
-    font-weight: 400;
-}
-
-/* ── STATE LABEL — BOTTOM CENTER ───────────────────────────── */
+/* ── State label bottom centre ── */
 #state-label {
-    position: fixed;
-    bottom: 28px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    color: rgba(255, 255, 255, 0.07);
-    font-family: 'Playfair Display', serif;
-    font-size: 11px;
-    letter-spacing: 0.5em;
-    text-transform: uppercase;
-    pointer-events: none;
-    transition: color 8s ease;
-    user-select: none;
-    font-style: italic;
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    z-index:10; color:rgba(255,255,255,0.07);
+    font-family:'Playfair Display',serif; font-size:11px;
+    letter-spacing:0.5em; text-transform:uppercase;
+    pointer-events:none; transition:color 8s ease;
+    user-select:none; font-style:italic;
 }
 
-/* ── SHARE BUTTON — BOTTOM RIGHT ───────────────────────────── */
+/* ── Share button bottom right ── */
 #share-btn {
-    position: fixed;
-    bottom: 26px;
-    right: 36px;
-    z-index: 10;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.0);
-    color: rgba(255, 255, 255, 0.0);
-    padding: 9px 20px;
-    border-radius: 30px;
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    cursor: pointer;
-    font-family: 'Outfit', sans-serif;
-    opacity: 0;
-    pointer-events: none;
-    transition: background 0.4s, color 0.4s, border-color 0.4s, opacity 2.5s ease;
+    position:fixed; bottom:26px; right:36px; z-index:10;
+    background:transparent; border:1px solid transparent;
+    color:transparent; padding:9px 20px; border-radius:30px;
+    font-size:10px; letter-spacing:0.18em; text-transform:uppercase;
+    cursor:pointer; font-family:'Outfit',sans-serif;
+    opacity:0; pointer-events:none;
+    transition:background 0.4s,color 0.4s,border-color 0.4s,opacity 2.5s;
 }
-
 #share-btn.visible {
-    opacity: 1;
-    pointer-events: auto;
-    border-color: rgba(255, 255, 255, 0.07);
-    color: rgba(255, 255, 255, 0.30);
+    opacity:1; pointer-events:auto;
+    border-color:rgba(255,255,255,0.07); color:rgba(255,255,255,0.30);
 }
+#share-btn:hover { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.88); border-color:rgba(255,255,255,0.16); }
 
-#share-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.88);
-    border-color: rgba(255, 255, 255, 0.16);
-}
-
-/* ── ABOUT LINK — TOP RIGHT ─────────────────────────────────── */
+/* ── About link top right ── */
 #about-link {
-    position: fixed;
-    top: 28px;
-    right: 36px;
-    z-index: 10;
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    text-decoration: none;
-    opacity: 0;
-    pointer-events: none;
-    color: rgba(255, 255, 255, 0.0);
-    transition: color 0.4s, opacity 2.5s ease;
+    position:fixed; top:28px; right:36px; z-index:10;
+    font-size:10px; letter-spacing:0.18em; text-transform:uppercase;
+    text-decoration:none; opacity:0; pointer-events:none;
+    color:transparent; transition:color 0.4s,opacity 2.5s;
 }
+#about-link.visible { opacity:1; pointer-events:auto; color:rgba(255,255,255,0.20); }
+#about-link:hover { color:rgba(255,255,255,0.72); }
 
-#about-link.visible {
-    opacity: 1;
-    pointer-events: auto;
-    color: rgba(255, 255, 255, 0.20);
-}
-
-#about-link:hover { color: rgba(255, 255, 255, 0.72); }
-
-/* ── PROMPT OVERLAY ──────────────────────────────────────────── */
+/* ── PROMPT OVERLAY ── */
 #prompt-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 30;
-    background: rgba(2, 4, 6, 0.0);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 32px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 4s ease, background 4s ease;
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    z-index:30; background:rgba(2,4,6,0);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:28px;
+    opacity:0; pointer-events:none;
+    transition:opacity 4s ease, background 4s ease;
 }
-
-#prompt-overlay.visible {
-    opacity: 1;
-    pointer-events: auto;
-    background: rgba(2, 4, 6, 0.90);
-}
+#prompt-overlay.visible { opacity:1; pointer-events:auto; background:rgba(2,4,6,0.92); }
 
 #prompt-question {
-    font-family: 'Playfair Display', serif;
-    font-size: 26px;
-    color: rgba(255, 255, 255, 0.62);
-    text-align: center;
-    line-height: 1.75;
-    font-style: italic;
-    letter-spacing: 0.02em;
-    max-width: 440px;
+    font-family:'Playfair Display',serif; font-size:26px;
+    color:rgba(255,255,255,0.62); text-align:center;
+    line-height:1.75; font-style:italic; max-width:420px;
 }
 
-#prompt-choices { display: flex; gap: 16px; }
+#prompt-choices { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
 
-#prompt-choices button,
-#share-card button {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    color: rgba(255, 255, 255, 0.52);
-    padding: 13px 30px;
-    border-radius: 30px;
-    font-size: 13px;
-    letter-spacing: 0.10em;
-    font-family: 'Outfit', sans-serif;
-    cursor: pointer;
-    transition: background 0.3s, color 0.3s, border-color 0.3s;
+#prompt-choices button {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.10);
+    color:rgba(255,255,255,0.52);
+    padding:12px 26px; border-radius:30px;
+    font-size:13px; letter-spacing:0.08em;
+    font-family:'Outfit',sans-serif; cursor:pointer;
+    transition:background 0.3s,color 0.3s,border-color 0.3s;
 }
+#prompt-choices button:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.95); border-color:rgba(255,255,255,0.20); }
 
-#prompt-choices button:hover,
-#share-card button:hover {
-    background: rgba(255, 255, 255, 0.09);
-    color: rgba(255, 255, 255, 0.95);
-    border-color: rgba(255, 255, 255, 0.20);
+/* comment field */
+#prompt-comment {
+    display:none; flex-direction:column; align-items:center; gap:14px;
+    width:100%; max-width:420px;
 }
+#comment-text {
+    width:100%; height:90px; background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.09); border-radius:14px;
+    color:rgba(255,255,255,0.72); font-family:'Outfit',sans-serif;
+    font-size:15px; font-weight:300; padding:14px 18px;
+    resize:none; outline:none; transition:border-color 0.3s;
+}
+#comment-text::placeholder { color:rgba(255,255,255,0.22); font-style:italic; }
+#comment-text:focus { border-color:rgba(255,255,255,0.18); }
+#btn-submit-comment {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.10);
+    color:rgba(255,255,255,0.50); padding:11px 28px;
+    border-radius:30px; font-size:12px; letter-spacing:0.10em;
+    font-family:'Outfit',sans-serif; cursor:pointer;
+    transition:background 0.3s,color 0.3s;
+}
+#btn-submit-comment:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.95); }
 
+/* share card */
 #share-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-    animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    text-align:center; animation:fadeUp 1.2s cubic-bezier(0.16,1,0.3,1) forwards;
 }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
+.share-intro { font-size:15px; color:rgba(255,255,255,0.32); letter-spacing:0.04em; line-height:1.75; }
+#share-url { font-family:'Playfair Display',serif; font-size:20px; color:rgba(255,255,255,0.60); font-style:italic; }
+
+.btn-row { display:flex; gap:12px; }
+.btn-row button, #share-card button {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10);
+    color:rgba(255,255,255,0.52); padding:12px 26px; border-radius:30px;
+    font-size:13px; letter-spacing:0.08em; font-family:'Outfit',sans-serif;
+    cursor:pointer; transition:background 0.3s,color 0.3s,border-color 0.3s;
 }
-
-.share-intro {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.35);
-    letter-spacing: 0.04em;
-    line-height: 1.75;
-}
-
-#share-url {
-    font-family: 'Playfair Display', serif;
-    font-size: 20px;
-    color: rgba(255, 255, 255, 0.62);
-    font-style: italic;
-}
-
-.btn-row { display: flex; gap: 12px; }
+.btn-row button:hover, #share-card button:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.95); border-color:rgba(255,255,255,0.20); }
 
 button.dismiss {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.20);
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    cursor: pointer;
-    padding: 6px 0;
-    font-family: 'Outfit', sans-serif;
-    transition: color 0.3s;
+    background:transparent; border:none;
+    color:rgba(255,255,255,0.18); font-size:11px;
+    letter-spacing:0.14em; text-transform:uppercase;
+    cursor:pointer; font-family:'Outfit',sans-serif;
+    transition:color 0.3s;
 }
-
-button.dismiss:hover { color: rgba(255, 255, 255, 0.62); }
+button.dismiss:hover { color:rgba(255,255,255,0.60); }
