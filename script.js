@@ -59,13 +59,9 @@ function updateState() {
     if (stateBlend < 0.25) {
         stateName = 'flow';
         card.style.transform = 'scale(1)';
-        card.style.background = 'rgba(8, 12, 18, 0.65)';
-        card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
     } else if (stateBlend < 0.7) {
         stateName = 'drift';
         card.style.transform = 'scale(0.98)';
-        card.style.background = 'rgba(8, 12, 18, 0.4)';
-        card.style.borderColor = 'rgba(255, 255, 255, 0.04)';
     } else {
         stateName = 'restore';
         card.style.transform = 'scale(0.96)';
@@ -76,3 +72,36 @@ function updateState() {
         hudState.textContent = stateName.charAt(0).toUpperCase() + stateName.slice(1);
     }
 }
+
+// Particle Engine
+const PARTICLE_COUNT = 850;
+let particles = [];
+class Particle {
+    constructor() { this.init(); }
+    init() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.life = Math.random() * 500;
+    }
+    update() {
+        this.life--;
+        if (this.life <= 0) this.init();
+    }
+    draw() {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+function loop() {
+    ctx.fillStyle = 'rgba(2, 4, 6, 0.2)';
+    ctx.fillRect(0, 0, W, H);
+    updateState();
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(loop);
+}
+loop();
