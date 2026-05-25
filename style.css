@@ -29,24 +29,39 @@ canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
     transition: transform 5s cubic-bezier(0.16,1,0.3,1), background 5s ease, border-color 5s ease;
     box-shadow:0 40px 80px rgba(0,0,0,0.5);
 }
+
+/* When card is dimmed, clicking anywhere on it wakes it to 60% */
+#editor-card.semi-visible {
+    pointer-events:auto;
+    cursor:text;
+}
+
 #editor-title {
     font-family:'Playfair Display',serif; font-size:22px;
     color:rgba(255,255,255,0.85); margin-bottom:22px;
     outline:none; border:none; background:transparent;
     font-style:italic; width:100%;
+    transition:color 4s ease;
 }
 #editor-title::placeholder { color:rgba(255,255,255,0.18); }
+
 #editor-textarea {
     width:100%; flex-grow:1; background:transparent;
     border:none; outline:none; resize:none;
     color:rgba(255,255,255,0.78); font-size:16px; line-height:1.95;
     font-family:'Outfit',sans-serif; font-weight:300;
+    transition:color 4s ease;
 }
+
+/* Placeholder fades via opacity on a pseudo — we use a wrapper trick */
 #editor-textarea::placeholder {
-    color:rgba(255,255,255,0.28); font-style:italic;
-    transition:color 0.9s ease;
+    color:rgba(255,255,255,0.28);
+    font-style:italic;
+    transition:color 1.2s ease;
 }
-#editor-textarea.placeholder-fade::placeholder { color:rgba(255,255,255,0); }
+#editor-textarea.placeholder-fade::placeholder {
+    color:rgba(255,255,255,0) !important;
+}
 
 /* ── HUD top left ── */
 #hud {
@@ -57,14 +72,27 @@ canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
 }
 #hud span { color:rgba(255,255,255,0.62); font-weight:400; }
 
-/* ── State label bottom centre ── */
+/* ── Privacy notice — bottom centre, replaces state label ── */
+#privacy-notice {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    z-index:10; pointer-events:none; user-select:none;
+    text-align:center;
+}
+#privacy-notice p {
+    font-size:10px; letter-spacing:0.14em; text-transform:uppercase;
+    color:rgba(255,255,255,0.14); line-height:1.8;
+    font-family:'Outfit',sans-serif;
+}
+
+/* State label hidden — privacy replaces it */
 #state-label {
-    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
-    z-index:10; color:rgba(255,255,255,0.07);
-    font-family:'Playfair Display',serif; font-size:11px;
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    z-index:9; color:rgba(255,255,255,0.06);
+    font-family:'Playfair Display',serif; font-size:10px;
     letter-spacing:0.5em; text-transform:uppercase;
     pointer-events:none; transition:color 8s ease;
     user-select:none; font-style:italic;
+    display:none;
 }
 
 /* ── Share button bottom right ── */
@@ -111,19 +139,14 @@ canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
 }
 
 #prompt-choices { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-
 #prompt-choices button {
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.10);
-    color:rgba(255,255,255,0.52);
-    padding:12px 26px; border-radius:30px;
-    font-size:13px; letter-spacing:0.08em;
-    font-family:'Outfit',sans-serif; cursor:pointer;
-    transition:background 0.3s,color 0.3s,border-color 0.3s;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10);
+    color:rgba(255,255,255,0.52); padding:12px 26px; border-radius:30px;
+    font-size:13px; letter-spacing:0.08em; font-family:'Outfit',sans-serif;
+    cursor:pointer; transition:background 0.3s,color 0.3s,border-color 0.3s;
 }
 #prompt-choices button:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.95); border-color:rgba(255,255,255,0.20); }
 
-/* comment field */
 #prompt-comment {
     display:none; flex-direction:column; align-items:center; gap:14px;
     width:100%; max-width:420px;
@@ -138,25 +161,20 @@ canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
 #comment-text::placeholder { color:rgba(255,255,255,0.22); font-style:italic; }
 #comment-text:focus { border-color:rgba(255,255,255,0.18); }
 #btn-submit-comment {
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.10);
-    color:rgba(255,255,255,0.50); padding:11px 28px;
-    border-radius:30px; font-size:12px; letter-spacing:0.10em;
-    font-family:'Outfit',sans-serif; cursor:pointer;
-    transition:background 0.3s,color 0.3s;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10);
+    color:rgba(255,255,255,0.50); padding:11px 28px; border-radius:30px;
+    font-size:12px; letter-spacing:0.10em; font-family:'Outfit',sans-serif;
+    cursor:pointer; transition:background 0.3s,color 0.3s;
 }
 #btn-submit-comment:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.95); }
 
-/* share card */
 #share-card {
     display:flex; flex-direction:column; align-items:center; gap:16px;
     text-align:center; animation:fadeUp 1.2s cubic-bezier(0.16,1,0.3,1) forwards;
 }
 @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-
 .share-intro { font-size:15px; color:rgba(255,255,255,0.32); letter-spacing:0.04em; line-height:1.75; }
 #share-url { font-family:'Playfair Display',serif; font-size:20px; color:rgba(255,255,255,0.60); font-style:italic; }
-
 .btn-row { display:flex; gap:12px; }
 .btn-row button, #share-card button {
     background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10);
@@ -165,12 +183,9 @@ canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
     cursor:pointer; transition:background 0.3s,color 0.3s,border-color 0.3s;
 }
 .btn-row button:hover, #share-card button:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.95); border-color:rgba(255,255,255,0.20); }
-
 button.dismiss {
-    background:transparent; border:none;
-    color:rgba(255,255,255,0.18); font-size:11px;
-    letter-spacing:0.14em; text-transform:uppercase;
-    cursor:pointer; font-family:'Outfit',sans-serif;
-    transition:color 0.3s;
+    background:transparent; border:none; color:rgba(255,255,255,0.18);
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    cursor:pointer; font-family:'Outfit',sans-serif; transition:color 0.3s;
 }
 button.dismiss:hover { color:rgba(255,255,255,0.60); }
