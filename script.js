@@ -140,10 +140,15 @@ async function updateSessionEmotion(tag) {
 startSession();
 
 // Exit listeners (no database spam)
-window.addEventListener("beforeunload", endSession);
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-        endSession();
+let sessionEnded = false;
+
+function safeEndSession() {
+    if (sessionEnded) return;
+    sessionEnded = true;
+    endSession();
+}
+
+window.addEventListener("pagehide", safeEndSession);
     }
 });
 // ── [END] DEVICE, SESSION & METRIC SIGNALS ────────────────────────
