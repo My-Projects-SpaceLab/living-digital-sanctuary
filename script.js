@@ -1,7 +1,7 @@
 // ── CONFIGURATION: CREDENTIALS ────────────────────────────────────
 // Paste your Supabase project URL and API key below
-const SUPABASE_URL = "https://uwaclfeptos............";
-const SUPABASE_KEY = "sb_publis............................";
+const SUPABASE_URL = "https://uwaclfeptosaterfimqn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3t70TIXLzaJTj1CngUDVzQ_yOQ91uHw";
 
 // Paste your Formspree URL from your dashboard below
 const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
