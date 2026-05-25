@@ -102,7 +102,7 @@ async function endSession() {
 
 // V3 Signal: Update the Supabase record when user selects a feeling
 async function updateSessionEmotion(tag) {
-    if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.includes("uwaclfeptos")) return;
+    if (!SUPABASE_URL || !SUPABASE_KEY) return;
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/sessions?session_id=eq.${sessionId}`, {
             method: "PATCH",
