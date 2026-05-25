@@ -254,26 +254,26 @@ function fieldAngle(x, y, t) {
     return n1 * Math.PI * 1.9 + n2 * Math.PI * 0.55;
 }
 
-// ── [START] GOLDEN EMBERS COLOR PALETTE ──
+// ── [START] REVERTED TO NEUTRAL/COOL ASH COLOR PALETTE ──
 function particleColor(hv, alpha) {
+    // We transition to a cool slate-grey/ash color in the Restore state to keep it neutral
     let h = stateBlend < 0.5
         ? 210 + (165 - 210) * (stateBlend / 0.5)
-        : 165 + (38  - 165) * ((stateBlend - 0.5) / 0.5);
+        : 165 + (200 - 165) * ((stateBlend - 0.5) / 0.5); // drifts to a calm slate blue-grey
     h += hv * 14 - 7;
 
-    // Saturation and Lightness values are boosted in the Restore state (stateBlend = 1.0)
-    // This makes the particles look like warm golden embers instead of dull grey ash
+    // Saturation drops down in the Restore state to look like neutral ash/slate drift
     const sat = stateBlend < 0.5 
         ? (72 - stateBlend * 16) 
-        : (56 + (88 - 56) * ((stateBlend - 0.5) / 0.5)); 
+        : (56 - (56 - 15) * ((stateBlend - 0.5) / 0.5)); // drops to 15% saturation in Restore
         
     const light = stateBlend < 0.5 
         ? (52 + stateBlend * 10) 
-        : (62 + (74 - 62) * ((stateBlend - 0.5) / 0.5)); 
+        : (62 - (62 - 48) * ((stateBlend - 0.5) / 0.5)); // quiet 48% lightness
 
     return `hsla(${h.toFixed(1)},${sat.toFixed(1)}%,${light.toFixed(1)}%,${alpha.toFixed(4)})`;
 }
-// ── [END] GOLDEN EMBERS COLOR PALETTE ──
+// ── [END] REVERTED TO NEUTRAL/COOL ASH COLOR PALETTE ──
 
 // ── PARTICLES ─────────────────────────────────────────────────────
 const MAX_P = 800, TAIL = 32;
@@ -308,28 +308,24 @@ class Particle {
         this.vx+=Math.cos(ang)*0.068*slow;
         this.vy+=Math.sin(ang)*0.068*slow;
 
-        // ── [START] UNIFIED RADIAL BREATHING PULSE ──
-        if (stateBlend > 0.1) {
-            // Target is the wandering glow center
+        // ── [START] UNPREDICTABLE DE-MAGNETIZED DRIFT ──
+        // Only a tiny background bias (0.008) is kept so the center doesn't go fully empty.
+        // It is independent of any breathing sync, keeping the motion natural and chaotic.
+        if (stateBlend > 0.5) {
+            const pullFactor = (stateBlend - 0.5) * 2; 
             const cx = W / 2 + glowOffsetX;
             const cy = H / 2 + glowOffsetY;
-            
             const dx = cx - this.x;
             const dy = cy - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
             
-            // Normalize direction vector away from center
             const ndx = dx / dist;
             const ndy = dy / dist;
             
-            // Use the cosine of breathPhase (which represents expansion/contraction)
-            // Positive is breathing out (expansion), negative is breathing in (contraction)
-            const breathForce = Math.cos(breathPhase) * 0.024 * stateBlend;
-            
-            this.vx += ndx * breathForce;
-            this.vy += ndy * breathForce;
+            this.vx += ndx * 0.008 * pullFactor;
+            this.vy += ndy * 0.008 * pullFactor;
         }
-        // ── [END] UNIFIED RADIAL BREATHING PULSE ──
+        // ── [END] UNPREDICTABLE DE-MAGNETIZED DRIFT ──
 
         const d=0.912+stateBlend*0.054;
         this.vx*=d; this.vy*=d;
@@ -339,29 +335,26 @@ class Particle {
         if(this.life>this.maxL||this.x<-90||this.x>W+90||this.y<-90||this.y>H+90) this.init(false);
     }
     
-    // ── [START] BREATHING SIZE AND BRIGHTNESS PULSE ──
+    // ── [START] INDEPENDENT, NATURAL DRAWING (NO BREATHING SYNC) ──
     draw() {
         if(this.trail.length<3) return;
         const la=Math.min(1,this.life/50)*Math.min(1,(this.maxL-this.life)/50);
         
-        // Let particle brightness and width pulse in sync with the global chest inhale/exhale
-        const pulseEffect = 1.0 + stateBlend * (currentPulse * 0.35 - 0.175); 
-        const base = (0.22 + stateBlend * 0.14) * pulseEffect;
+        // Particles keep their own natural, chaotic drawing state
+        const base = 0.22 + stateBlend * 0.14;
         
         for(let i=1;i<this.trail.length;i++){
             const f=i/this.trail.length;
             ctx.beginPath();
             ctx.strokeStyle=particleColor(this.hv,f*la*base);
-            
-            // Size also expands and contracts with breath
-            ctx.lineWidth=f*this.sz*1.4 * (1.0 + stateBlend * (currentPulse * 0.3 - 0.15)); 
+            ctx.lineWidth=f*this.sz*1.4; 
             ctx.lineCap='round';
             ctx.moveTo(this.trail[i-1].x,this.trail[i-1].y);
             ctx.lineTo(this.trail[i].x,this.trail[i].y);
             ctx.stroke();
         }
     }
-    // ── [END] BREATHING SIZE AND BRIGHTNESS PULSE ──
+    // ── [END] INDEPENDENT, NATURAL DRAWING (NO BREATHING SYNC) ──
 }
 const particles=Array.from({length:MAX_P},()=>new Particle());
 
@@ -378,6 +371,7 @@ setInterval(() => {
     glowTargetY = (Math.random() - 0.5) * H * 0.10;
 }, 6000);
 
+// ── [START] FAINT ASH GLOW INSTEAD OF SPOTLIGHT ──
 function drawBreath() {
     const vis = Math.max(0, (stateBlend - 0.2) / 0.8);
     if (vis < 0.01) return;
@@ -386,21 +380,24 @@ function drawBreath() {
     glowOffsetX += (glowTargetX - glowOffsetX) * 0.002;
     glowOffsetY += (glowTargetY - glowOffsetY) * 0.002;
 
-    // Softer: smaller radius, lower max alpha
+    // Faint, quiet radius and extremely low opacity (0.010 instead of 0.038)
     const radius = Math.min(W, H) * (0.16 + currentPulse * 0.09);
-    const alpha  = vis * 0.038 * (0.3 + currentPulse * 0.7); // max ~0.038, much softer
+    const alpha  = vis * 0.010 * (0.5 + currentPulse * 0.5); 
 
     const cx = W / 2 + glowOffsetX;
     const cy = H / 2 + glowOffsetY;
-    const hue = 38 + (1 - stateBlend) * 122;
+    
+    // Transitions to a cool slate-grey/ash hue instead of orange/amber
+    const hue = stateBlend < 0.5 ? 210 : 210 + (200 - 210) * ((stateBlend - 0.5) / 0.5);
 
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    g.addColorStop(0,   `hsla(${hue},60%,58%,${alpha.toFixed(4)})`);
-    g.addColorStop(0.4, `hsla(${hue},48%,40%,${(alpha*0.35).toFixed(4)})`);
+    g.addColorStop(0,   `hsla(${hue},40%,48%,${alpha.toFixed(4)})`);
+    g.addColorStop(0.4, `hsla(${hue},30%,30%,${(alpha*0.35).toFixed(4)})`);
     g.addColorStop(1,   'rgba(0,0,0,0)');
     ctx.beginPath(); ctx.fillStyle=g;
     ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
 }
+// ── [END] FAINT ASH GLOW INSTEAD OF SPOTLIGHT ──
 
 function drawVignette() {
     const str=0.42+stateBlend*0.22;
