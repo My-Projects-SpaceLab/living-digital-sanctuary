@@ -187,11 +187,23 @@ async function load() {
   else from = new Date(0);
 
   // Fetch sorted ascending chronologically
-  const { data } = await supabase
-    .from("sessions")
-    .select("*")
-    .gte("session_start", from.getTime())
-    .order("session_start", { ascending: true });
+const { data, error } = await supabase
+  .from("sessions")
+  .select("*")
+  .order("session_start", { ascending: true });
+
+console.log("SUPABASE DATA:", data);
+console.log("SUPABASE ERROR:", error);
+
+if (error) {
+  console.error("DB fetch error:", error);
+  return;
+}
+
+if (!data || data.length === 0) {
+  console.warn("No sessions found in DB");
+  return;
+}
 
   if(!data) return;
 
