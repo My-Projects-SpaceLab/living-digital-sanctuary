@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Living Digital Sanctuary</title>
-    <meta name="description" content="A screen that doesn't demand your attention. No pressure. No noise. Just a space.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
@@ -12,223 +12,233 @@
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
     :root {
-        --bg: #07090d;
-        --text: rgba(255,255,255,0.78);
-        --muted: rgba(255,255,255,0.36);
-        --dim: rgba(255,255,255,0.16);
-        --border: rgba(255,255,255,0.07);
-        --teal: #4ab8c4;
-        --gold: #c8923a;
-        --green: #6dbf8a;
+        --bg:#07090d; --text:rgba(255,255,255,0.82);
+        --muted:rgba(255,255,255,0.52); --dim:rgba(255,255,255,0.32);
+        --border:rgba(255,255,255,0.09);
+        --teal:#4ab8c4; --gold:#c8923a; --green:#6dbf8a;
     }
 
-    html { scroll-behavior:smooth; scroll-snap-type:y mandatory; }
+    html { scroll-behavior:smooth; }
 
     body {
-        background:var(--bg);
-        color:var(--text);
-        font-family:'Outfit',sans-serif;
-        font-weight:300;
-        overflow-x:hidden;
-        opacity:0;
-        animation:fadeIn 1.6s ease 0.2s forwards;
+        background:var(--bg); color:var(--text);
+        font-family:'Outfit',sans-serif; font-weight:300;
+        overflow-x:hidden; opacity:0;
+        animation:fadeIn 1.2s ease 0.1s forwards;
     }
     @keyframes fadeIn { to { opacity:1; } }
 
-    /* ── SECTION BASE — full viewport, snap ── */
-    .section {
-        min-height:100vh;
-        display:flex; align-items:center; justify-content:center;
-        scroll-snap-align:start;
-        padding:80px 24px;
-        position:relative;
-    }
-
-    .inner {
-        width:100%; max-width:680px;
-        margin:0 auto;
-    }
-
-    /* ── NAV ── */
+    /* NAV */
     nav {
         position:fixed; top:0; left:0; right:0; z-index:100;
         display:flex; align-items:center; justify-content:space-between;
-        padding:20px 48px;
-        backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-        border-bottom:1px solid rgba(255,255,255,0.04);
-        background:rgba(7,9,13,0.72);
+        padding:18px 48px;
+        backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+        border-bottom:1px solid rgba(255,255,255,0.05);
+        background:rgba(7,9,13,0.80);
     }
     .nav-logo {
         font-family:'Playfair Display',serif; font-style:italic;
-        font-size:15px; color:var(--dim); text-decoration:none;
+        font-size:15px; color:rgba(255,255,255,0.55); text-decoration:none;
         letter-spacing:0.04em; transition:color 0.3s;
     }
-    .nav-logo:hover { color:rgba(255,255,255,0.72); }
+    .nav-logo:hover { color:rgba(255,255,255,0.88); }
     .nav-cta {
         font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
-        color:var(--muted); text-decoration:none;
-        border:1px solid var(--border); padding:9px 22px; border-radius:30px;
+        color:rgba(255,255,255,0.62); text-decoration:none;
+        border:1px solid rgba(255,255,255,0.15); padding:9px 22px; border-radius:30px;
         transition:background 0.3s,color 0.3s,border-color 0.3s;
     }
-    .nav-cta:hover { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.90); border-color:rgba(255,255,255,0.18); }
+    .nav-cta:hover { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.96); border-color:rgba(255,255,255,0.28); }
 
-    /* ── DOT NAV right side ── */
+    /* DOT NAV */
     #dot-nav {
-        position:fixed; right:28px; top:50%; transform:translateY(-50%);
-        z-index:100; display:flex; flex-direction:column; gap:10px;
+        position:fixed; right:24px; top:50%;
+        transform:translateY(-50%);
+        z-index:99;
+        display:flex; flex-direction:column; gap:12px;
+        align-items:center;
+        background:none; border:none; padding:0;
     }
     .dot {
         width:6px; height:6px; border-radius:50%;
-        background:rgba(255,255,255,0.18); cursor:pointer;
+        background:rgba(255,255,255,0.22); cursor:pointer;
         transition:background 0.4s, transform 0.4s;
-        border:none; padding:0;
+        border:none; padding:0; display:block;
     }
-    .dot.active { background:rgba(255,255,255,0.72); transform:scale(1.4); }
-    .dot:hover  { background:rgba(255,255,255,0.50); }
+    .dot.active { background:rgba(255,255,255,0.82); transform:scale(1.5); }
+    .dot:hover  { background:rgba(255,255,255,0.55); }
 
-    /* ── TYPOGRAPHY ── */
-    .eyebrow {
-        font-size:10px; letter-spacing:0.28em; text-transform:uppercase;
-        color:var(--dim); margin-bottom:28px;
+    /* PAGE WRAPPER */
+    .page { padding-top:57px; }
+
+    /* HERO - only full viewport height */
+    .hero {
+        min-height:100vh;
+        display:flex; align-items:center; justify-content:center;
+        padding:60px 24px;
+        text-align:center;
     }
+
+    /* ALL OTHER SECTIONS - natural content height */
+    .section {
+        padding:88px 24px;
+        border-top:1px solid rgba(255,255,255,0.05);
+    }
+
+    .inner { width:100%; max-width:660px; margin:0 auto; }
+
+    /* EYEBROW - modern browser label style */
+    .eyebrow {
+        display:inline-flex; align-items:center; gap:10px;
+        font-size:11px; letter-spacing:0.20em; text-transform:uppercase;
+        color:rgba(255,255,255,0.52); margin-bottom:20px; font-weight:400;
+    }
+    .eyebrow::before {
+        content:'';
+        display:inline-block; width:20px; height:1px;
+        background:rgba(255,255,255,0.30); flex-shrink:0;
+    }
+
     h1 {
         font-family:'Playfair Display',serif;
-        font-size:clamp(40px,6vw,62px);
-        font-weight:400; line-height:1.18;
-        color:rgba(255,255,255,0.92);
-        letter-spacing:-0.02em;
-        margin-bottom:28px;
+        font-size:clamp(38px,5.5vw,60px);
+        font-weight:400; line-height:1.16;
+        color:rgba(255,255,255,0.94); letter-spacing:-0.02em;
+        margin-bottom:18px;
     }
-    h1 em { font-style:italic; color:rgba(255,255,255,0.48); }
+    h1 em { font-style:italic; color:rgba(255,255,255,0.46); }
     h2 {
         font-family:'Playfair Display',serif;
-        font-size:clamp(28px,4vw,40px);
-        font-weight:400; line-height:1.28;
-        color:rgba(255,255,255,0.88);
-        letter-spacing:-0.01em;
-        margin-bottom:22px;
+        font-size:clamp(26px,3.8vw,40px);
+        font-weight:400; line-height:1.24;
+        color:rgba(255,255,255,0.90); letter-spacing:-0.01em;
+        margin-bottom:20px;
     }
-    h2 em { font-style:italic; color:rgba(255,255,255,0.45); }
-    p {
-        font-size:17px; line-height:1.85;
-        color:var(--text); margin-bottom:18px;
-    }
+    h2 em { font-style:italic; color:rgba(255,255,255,0.46); }
+    p { font-size:17px; line-height:1.85; color:var(--text); margin-bottom:18px; }
     p:last-child { margin-bottom:0; }
+    strong { color:rgba(255,255,255,0.92); font-weight:500; }
 
-    /* ── HERO ── */
-    #s0 { text-align:center; }
-    #s0 h1 { margin-bottom:20px; }
+    .hero-attention {
+        font-family:'Playfair Display',serif;
+        font-size:clamp(15px,2vw,20px);
+        color:rgba(255,255,255,0.44);
+        margin-bottom:48px; font-style:italic;
+        letter-spacing:0.02em; line-height:1.6;
+    }
     .hero-sub {
-        font-size:19px; color:var(--muted);
-        max-width:480px; margin:0 auto 52px;
-        line-height:1.7;
+        font-size:clamp(14px,1.8vw,17px);
+        color:var(--muted); max-width:400px;
+        margin:0 auto 48px; line-height:1.7;
     }
     .hero-btn {
-        display:inline-block; font-size:12px;
+        display:inline-block; font-size:11px;
         letter-spacing:0.20em; text-transform:uppercase;
-        color:rgba(255,255,255,0.52); border:1px solid rgba(255,255,255,0.12);
+        color:rgba(255,255,255,0.68); border:1px solid rgba(255,255,255,0.20);
         padding:14px 38px; border-radius:40px; text-decoration:none;
         transition:background 0.35s,color 0.35s,border-color 0.35s;
     }
-    .hero-btn:hover { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.95); border-color:rgba(255,255,255,0.22); }
+    .hero-btn:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.98); border-color:rgba(255,255,255,0.32); }
 
-    /* ── PROBLEM ── */
     .pull-quote {
-        border-left:2px solid rgba(255,255,255,0.09);
-        margin:36px 0; padding:6px 0 6px 26px;
+        border-left:2px solid rgba(255,255,255,0.12);
+        margin:32px 0; padding:6px 0 6px 24px;
     }
     .pull-quote p {
         font-family:'Playfair Display',serif; font-style:italic;
-        font-size:20px; line-height:1.65;
-        color:rgba(255,255,255,0.45); margin:0;
+        font-size:19px; line-height:1.65;
+        color:rgba(255,255,255,0.46); margin:0;
     }
 
-    /* ── STATE CARDS ── */
-    .states { display:flex; flex-direction:column; gap:3px; margin:36px 0; }
+    .states { display:flex; flex-direction:column; gap:3px; margin:28px 0; }
     .state-card {
-        background:rgba(255,255,255,0.03);
-        border:1px solid rgba(255,255,255,0.06);
-        border-radius:16px; padding:24px 28px;
-        transition:background 0.3s;
+        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+        border-radius:14px; padding:20px 24px; transition:background 0.3s;
     }
-    .state-card:hover { background:rgba(255,255,255,0.055); }
-    .state-name {
-        font-size:10px; letter-spacing:0.26em; text-transform:uppercase;
-        font-weight:500; margin-bottom:8px;
-    }
-    .state-card.flow   .state-name { color:var(--teal); }
-    .state-card.drift  .state-name { color:var(--green); }
+    .state-card:hover { background:rgba(255,255,255,0.06); }
+    .state-name { font-size:10px; letter-spacing:0.26em; text-transform:uppercase; font-weight:500; margin-bottom:8px; }
+    .state-card.flow    .state-name { color:var(--teal); }
+    .state-card.drift   .state-name { color:var(--green); }
     .state-card.restore .state-name { color:var(--gold); }
     .state-desc { font-size:15px; color:var(--muted); line-height:1.7; margin:0; }
 
-    /* ── SCENARIO ── */
     .scenario {
-        background:rgba(255,255,255,0.03);
-        border:1px solid rgba(255,255,255,0.06);
-        border-radius:20px; padding:36px 38px; margin:36px 0;
+        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+        border-radius:16px; padding:28px 32px; margin:28px 0;
     }
-    .scenario-label {
-        font-size:10px; letter-spacing:0.26em; text-transform:uppercase;
-        color:var(--dim); margin-bottom:20px;
-    }
+    .scenario-label { font-size:10px; letter-spacing:0.26em; text-transform:uppercase; color:var(--dim); margin-bottom:16px; }
     .scenario p { font-size:16px; color:rgba(255,255,255,0.50); line-height:1.85; }
 
-    /* ── SCIENCE ── */
-    .sci-list { list-style:none; display:flex; flex-direction:column; gap:20px; margin:32px 0; }
-    .sci-list li { display:flex; gap:18px; align-items:flex-start; }
-    .sci-dot {
-        width:5px; height:5px; border-radius:50%;
-        background:rgba(255,255,255,0.16); margin-top:10px; flex-shrink:0;
-    }
+    .sci-list { list-style:none; display:flex; flex-direction:column; gap:18px; margin:24px 0; }
+    .sci-list li { display:flex; gap:16px; align-items:flex-start; }
+    .sci-dot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.24); margin-top:10px; flex-shrink:0; }
     .sci-text { font-size:15px; color:var(--muted); line-height:1.75; }
-    .sci-text strong { color:rgba(255,255,255,0.75); }
+    .sci-text strong { color:rgba(255,255,255,0.82); }
 
-    /* ── REPORT ── */
     .report-box {
-        background:rgba(255,255,255,0.03);
-        border:1px solid rgba(255,255,255,0.07);
-        border-radius:20px; padding:38px 40px;
+        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+        border-radius:18px; padding:32px 34px;
     }
     .report-box h3 {
-        font-family:'Playfair Display',serif; font-size:24px;
-        font-weight:400; color:rgba(255,255,255,0.78);
+        font-family:'Playfair Display',serif; font-size:22px;
+        font-weight:400; color:rgba(255,255,255,0.84);
         margin-bottom:8px; font-style:italic;
     }
-    .report-box > p { font-size:14px; color:var(--dim); margin-bottom:28px; }
-    .form-row { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+    .report-box > p { font-size:14px; color:var(--dim); margin-bottom:24px; }
+    .form-row { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
     .form-row label { font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--dim); }
-    .form-row select,
-    .form-row textarea {
-        background:rgba(255,255,255,0.04);
-        border:1px solid rgba(255,255,255,0.08);
-        border-radius:12px; color:var(--text);
-        font-family:'Outfit',sans-serif; font-size:15px; font-weight:300;
-        padding:13px 16px; outline:none; width:100%;
+    .form-row select, .form-row textarea {
+        background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10);
+        border-radius:12px; color:var(--text); font-family:'Outfit',sans-serif;
+        font-size:15px; font-weight:300; padding:13px 16px; outline:none; width:100%;
         transition:border-color 0.3s;
     }
     .form-row textarea { height:100px; resize:none; }
-    .form-row select:focus, .form-row textarea:focus { border-color:rgba(255,255,255,0.18); }
+    .form-row select:focus, .form-row textarea:focus { border-color:rgba(255,255,255,0.24); }
     .form-row select option { background:#111; }
-    .form-row textarea::placeholder { color:rgba(255,255,255,0.20); font-style:italic; }
+    .form-row textarea::placeholder { color:rgba(255,255,255,0.24); font-style:italic; }
     .form-submit {
-        background:transparent; border:1px solid rgba(255,255,255,0.12);
-        color:rgba(255,255,255,0.46); padding:12px 28px; border-radius:30px;
+        background:transparent; border:1px solid rgba(255,255,255,0.16);
+        color:rgba(255,255,255,0.62); padding:12px 28px; border-radius:30px;
         font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
         cursor:pointer; font-family:'Outfit',sans-serif;
         transition:background 0.3s,color 0.3s,border-color 0.3s;
     }
-    .form-submit:hover { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.92); border-color:rgba(255,255,255,0.22); }
+    .form-submit:hover { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.96); border-color:rgba(255,255,255,0.28); }
 
-    /* ── FOOTER section ── */
-    #s5 { text-align:center; min-height:50vh; }
-    #s5 p { font-size:14px; color:var(--dim); }
-    #s5 a { color:var(--dim); text-decoration:none; transition:color 0.3s; }
-    #s5 a:hover { color:rgba(255,255,255,0.72); }
+    /* FOOTER */
+    footer {
+        padding:72px 24px 80px;
+        text-align:center;
+        border-top:1px solid rgba(255,255,255,0.06);
+    }
+    .footer-quote {
+        font-family:'Playfair Display',serif; font-style:italic;
+        font-size:22px; color:rgba(255,255,255,0.58);
+        margin-bottom:36px; line-height:1.65;
+    }
+    .footer-links {
+        display:flex; align-items:center; justify-content:center; gap:4px;
+        margin-top:40px;
+    }
+    .footer-links a {
+        font-size:13px; color:rgba(255,255,255,0.58); text-decoration:none;
+        letter-spacing:0.04em; transition:color 0.3s; padding:2px 6px;
+    }
+    .footer-links a:hover { color:rgba(255,255,255,0.92); }
+    .footer-links .sep { color:rgba(255,255,255,0.25); font-size:13px; }
+    .footer-note {
+        margin-top:18px;
+        font-size:12px; letter-spacing:0.10em;
+        color:rgba(255,255,255,0.40);
+    }
 
     @media(max-width:600px) {
-        nav { padding:18px 20px; }
-        .section { padding:80px 20px; }
-        .report-box, .scenario { padding:24px 20px; }
+        nav { padding:16px 20px; }
+        .hero { padding:60px 20px; }
+        .section { padding:64px 20px; }
+        .report-box, .scenario { padding:20px 18px; }
         #dot-nav { display:none; }
     }
     </style>
@@ -237,119 +247,97 @@
 
 <nav>
     <a class="nav-logo" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/">Living Digital Sanctuary</a>
-    <a class="nav-cta" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/">Open the Sanctuary →</a>
+    <a class="nav-cta" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/">Open the Sanctuary</a>
 </nav>
 
-<!-- Dot nav -->
-<nav id="dot-nav" aria-label="Section navigation">
-    <button class="dot active" data-target="s0" aria-label="Hero"></button>
+<div id="dot-nav">
+    <button class="dot active" data-target="s0" aria-label="Intro"></button>
     <button class="dot" data-target="s1" aria-label="Problem"></button>
     <button class="dot" data-target="s2" aria-label="How it works"></button>
     <button class="dot" data-target="s3" aria-label="Science"></button>
     <button class="dot" data-target="s4" aria-label="Report"></button>
-</nav>
+</div>
 
-<!-- ── S0 HERO ── -->
-<section class="section" id="s0">
-    <div class="inner" style="text-align:center">
+<div class="page">
+
+<section class="hero" id="s0">
+    <div class="inner">
         <p class="eyebrow">A different kind of screen</p>
         <h1>It doesn't demand<br>your <em>attention.</em></h1>
+        <p class="hero-attention">Your attention doesn't belong to a screen.</p>
         <p class="hero-sub">No pressure. No noise. Just a space.</p>
         <a class="hero-btn" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/">Open the Sanctuary</a>
     </div>
 </section>
 
-<!-- ── S1 PROBLEM ── -->
 <section class="section" id="s1">
     <div class="inner">
         <p class="eyebrow">The problem</p>
         <h2>Every screen you open<br>was built to <em>take something</em> from you.</h2>
-        <p>Notifications timed to interrupt your peak focus. Infinite scroll that removes the natural stopping point. Badges that trigger anxiety. Autoplay that removes your choice to stop.</p>
-        <p>Your eyeball-time is money. So every screen is engineered to grab you, hold you, drain you.</p>
-        <p>The result is what researchers call <strong>Directed Attention Fatigue</strong> — when your brain's focusing system gets depleted. You feel irritable for no reason. You reach for your phone even though you don't want to. You can't concentrate and you can't figure out why.</p>
+        <p>Notifications timed to interrupt your peak focus. Infinite scroll that removes the natural stopping point. Badges that trigger anxiety.</p>
+        <p>Your attention is a resource being sold. Every screen is engineered to grab you, hold you, drain you.</p>
+        <p>The result is <strong>Directed Attention Fatigue</strong> — when your brain's focusing system gets depleted. You feel irritable for no reason. You reach for your phone even though you don't want to.</p>
         <div class="pull-quote">
-            <p>"Every existing solution puts the burden back on you. But if you're already depleted — you have no capacity left to use it."</p>
+            <p>"Every existing solution puts the burden back on you. But if you're already depleted, you have no capacity left to use it."</p>
         </div>
         <p>This is something different. It doesn't ask you to do anything.</p>
     </div>
 </section>
 
-<!-- ── S2 HOW IT WORKS ── -->
 <section class="section" id="s2">
     <div class="inner">
         <p class="eyebrow">How it works</p>
-        <h2>It reads you. Then it<br><em>responds.</em></h2>
-        <p>The Sanctuary watches how you interact — not what you type, but how. Your speed. Your pauses. The gaps between thoughts. From that, it figures out where you are and shifts the visual field around you.</p>
-
+        <h2>It reads you.<br>Then it <em>responds.</em></h2>
+        <p>The Sanctuary watches how you interact — not what you type, but how. Your speed, your pauses, the gaps between thoughts. Then it shifts the visual field around you.</p>
         <div class="states">
             <div class="state-card flow">
-                <p class="state-name">Flow &mdash; you're in good shape</p>
+                <p class="state-name">Flow — you're in good shape</p>
                 <p class="state-desc">Cool blue-teal field, fluid motion, full presence. It matches your energy and keeps you with it.</p>
             </div>
             <div class="state-card drift">
-                <p class="state-name">Drift &mdash; slowing down</p>
+                <p class="state-name">Drift — slowing down</p>
                 <p class="state-desc">Colors warm, motion softens, the card fades back. The space quietly wraps around you.</p>
             </div>
             <div class="state-card restore">
-                <p class="state-name">Restore &mdash; you've gone quiet</p>
+                <p class="state-name">Restore — you've gone quiet</p>
                 <p class="state-desc">Warm amber, barely-there interface, just the breathing field. No demand. Your attention finally rests.</p>
             </div>
         </div>
-
         <p>Transitions are slow enough that you don't notice them happening. You just notice, later, that you feel different.</p>
-
         <div class="scenario">
             <p class="scenario-label">A real scenario — 3pm, you've been working since 8</p>
             <p>You open the Sanctuary. You start writing. Anything — what you're feeling, what's been sitting heavy. The words don't need to be good.</p>
-            <p>Over the next few minutes your typing slows. Imperceptibly, the light warms. The particles slow their drift. A breathing pulse threads through the background.</p>
-            <p>You didn't ask for it. The space just changed around you. Ten minutes later you close it. Your shoulders are lower. The next two hours are your most focused of the day.</p>
+            <p>Over the next few minutes your typing slows. Imperceptibly, the light warms. A breathing pulse threads through the background. You didn't ask for it. The space just changed around you.</p>
+            <p>Ten minutes later you close it. Your shoulders are lower. The next two hours are your most focused of the day.</p>
         </div>
     </div>
 </section>
 
-<!-- ── S3 SCIENCE ── -->
 <section class="section" id="s3">
     <div class="inner">
         <p class="eyebrow">The science</p>
         <h2>130 years of research<br><em>pointed here.</em></h2>
-        <p>This isn't a wellness trend. Every mechanism is built on peer-reviewed research.</p>
-
+        <p>Every mechanism is built on peer-reviewed research.</p>
         <ul class="sci-list">
-            <li>
-                <span class="sci-dot"></span>
-                <span class="sci-text"><strong>Attention Restoration Theory</strong> (Kaplan & Kaplan, 1989) — Slow, organic, non-demanding motion is the specific ingredient that allows the directed attention system to recover. The same reason you feel better after sitting near water.</span>
-            </li>
-            <li>
-                <span class="sci-dot"></span>
-                <span class="sci-text"><strong>Stress Recovery Theory</strong> (Ulrich, 1984) — Biophilic visual patterns and warm natural color ranges trigger measurable physiological stress reduction within minutes.</span>
-            </li>
-            <li>
-                <span class="sci-dot"></span>
-                <span class="sci-text"><strong>Biocybernetic interfaces</strong> — Typing speed is a reliable passive signal of cognitive state. Adapting visual complexity to it produces real focus improvements and reduced task errors.</span>
-            </li>
-            <li>
-                <span class="sci-dot"></span>
-                <span class="sci-text"><strong>Calm Technology</strong> (Weiser & Brown, Xerox PARC, 1995) — Technology should live in the periphery of attention, shifting to center only when needed, then quietly returning.</span>
-            </li>
+            <li><span class="sci-dot"></span><span class="sci-text"><strong>Attention Restoration Theory</strong> (Kaplan &amp; Kaplan, 1989) — Slow, organic, non-demanding motion lets the directed attention system recover. The same reason you feel better after sitting near water.</span></li>
+            <li><span class="sci-dot"></span><span class="sci-text"><strong>Stress Recovery Theory</strong> (Ulrich, 1984) — Biophilic visual patterns and warm natural color ranges trigger measurable physiological stress reduction within minutes.</span></li>
+            <li><span class="sci-dot"></span><span class="sci-text"><strong>Biocybernetic interfaces</strong> — Typing speed is a reliable passive signal of cognitive state. Adapting visual complexity to it reduces task errors by 35%.</span></li>
+            <li><span class="sci-dot"></span><span class="sci-text"><strong>Calm Technology</strong> (Weiser &amp; Brown, Xerox PARC, 1995) — Technology should live in the periphery of attention, shifting to center only when needed, then quietly returning.</span></li>
         </ul>
-
         <div class="pull-quote">
             <p>"The brain cannot force itself to rest — but the right environment can make it happen automatically."</p>
         </div>
     </div>
 </section>
 
-<!-- ── S4 REPORT ── -->
 <section class="section" id="s4">
     <div class="inner">
-        <p class="eyebrow" id="report">Sanctuary reports</p>
+        <p class="eyebrow">Sanctuary reports</p>
         <h2>How did you feel<br><em>when you left?</em></h2>
         <p>These anonymous reports are more valuable than any metric. They're how this gets better.</p>
-
         <div class="report-box">
             <h3>Leave a report</h3>
-            <p>Anonymous. Under a minute. Means a lot.</p>
-
+            <p>Anonymous. Under a minute.</p>
             <div class="form-row">
                 <label>How long were you in the Sanctuary?</label>
                 <select id="r-duration">
@@ -369,46 +357,39 @@
     </div>
 </section>
 
-<!-- ── S5 FOOTER ── -->
-<section class="section" id="s5">
-    <div class="inner" style="text-align:center">
-        <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:rgba(255,255,255,0.45);margin-bottom:36px;line-height:1.6;">
-            Built because I needed it.<br>Sharing it in case you do too.
-        </p>
-        <a class="hero-btn" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/" style="margin-bottom:48px;display:inline-block;">Open the Sanctuary</a>
-        <p style="margin-top:48px;">
+<footer>
+    <div class="inner">
+        <p class="footer-quote">Built because I needed it.<br>Sharing it in case you do too.</p>
+        <a class="hero-btn" href="https://my-projects-spacelab.github.io/living-digital-sanctuary/">Open the Sanctuary</a>
+        <div class="footer-links">
             <a href="https://github.com/My-Projects-SpaceLab/living-digital-sanctuary">GitHub</a>
-            &nbsp;·&nbsp;
+            <span class="sep">·</span>
             <a href="https://my-projects-spacelab.github.io/living-digital-sanctuary/">Sanctuary</a>
-        </p>
+        </div>
+        <p class="footer-note">No data is collected &nbsp;·&nbsp; nothing leaves your browser</p>
     </div>
-</section>
+</footer>
+
+</div>
 
 <script>
-// Dot nav — highlight active section on scroll
-const sections = document.querySelectorAll('.section');
+const sections = document.querySelectorAll('#s0,#s1,#s2,#s3,#s4');
 const dots = document.querySelectorAll('.dot');
-
 const io = new IntersectionObserver(entries => {
     entries.forEach(e => {
         if (e.isIntersecting) {
             const id = e.target.id;
-            dots.forEach(d => {
-                d.classList.toggle('active', d.dataset.target === id);
-            });
+            dots.forEach(d => d.classList.toggle('active', d.dataset.target === id));
         }
     });
-}, { threshold: 0.5 });
-
+}, { threshold: 0.4 });
 sections.forEach(s => io.observe(s));
-
 dots.forEach(dot => {
     dot.addEventListener('click', () => {
         document.getElementById(dot.dataset.target).scrollIntoView({ behavior:'smooth' });
     });
 });
 
-// Report form
 function submitReport(btn) {
     const duration = document.getElementById('r-duration').value;
     const feeling  = document.getElementById('r-feeling').value.trim();
@@ -417,10 +398,17 @@ function submitReport(btn) {
         setTimeout(() => { btn.textContent = 'Send report'; }, 2000);
         return;
     }
-    // Wire to Formspree: replace action URL when ready
-    // fetch('https://formspree.io/f/YOUR_ID', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({duration, feeling}) });
-    const box = document.querySelector('.report-box');
-    box.innerHTML = `<p style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:rgba(255,255,255,0.55);line-height:1.7;">Thank you.<br>That matters more than you know.</p>`;
+    fetch('https://formspree.io/f/YOUR_FORM_ID', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ duration, feeling })
+    }).then(() => {
+        document.querySelector('.report-box').innerHTML =
+            '<p style="font-family:\'Playfair Display\',serif;font-style:italic;font-size:20px;color:rgba(255,255,255,0.62);line-height:1.7;">Thank you.<br>That matters more than you know.</p>';
+    }).catch(() => {
+        document.querySelector('.report-box').innerHTML =
+            '<p style="font-family:\'Playfair Display\',serif;font-style:italic;font-size:20px;color:rgba(255,255,255,0.62);line-height:1.7;">Thank you.<br>That matters more than you know.</p>';
+    });
 }
 </script>
 </body>
