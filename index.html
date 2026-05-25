@@ -33,7 +33,10 @@
 
     <!-- Privacy notice bottom centre — replaces state label -->
     <div id="privacy-notice">
-        <p>No data leaves your browser &nbsp;·&nbsp; nothing is stored</p>
+        <p id="privacy-notice-text">
+            No private data is leaves your browser.
+            <a href="#" id="privacy-link">how we use data</a>
+        </p>
     </div>
 
     <!-- Share button bottom right — fades in after 30s -->
@@ -61,6 +64,16 @@
             <button id="btn-dismiss" class="dismiss">Close</button>
         </div>
     </div>
+
+    <div id="privacy-modal" class="privacy-modal hidden">
+    <div class="privacy-box">
+        <p>
+            We use a small amount of usage information to gently improve the experience.  
+            Nothing personal information/data/text is collected nor stored.
+        </p>
+        <button id="privacy-close">Close</button>
+    </div>
+</div>
 
     <script src="script.js"></script>
 </body>
