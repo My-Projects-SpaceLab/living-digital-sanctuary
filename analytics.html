@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sanctuary Analytics 2026</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  margin:0;
+  font-family: Inter, system-ui;
+  background: radial-gradient(circle at top,#0b1220,#05070c);
+  color:white;
+}
+
+/* layout */
+.container {
+  display:grid;
+  grid-template-columns: 240px 1fr;
+  height:100vh;
+}
+
+/* sidebar */
+.sidebar {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  padding:20px;
+}
+
+.logo {
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:30px;
+}
+
+/* main */
+.main {
+  padding:20px;
+  overflow-y: auto;
+}
+
+/* top bar */
+.topbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+select {
+  background:#111827;
+  color:white;
+  border:1px solid #333;
+  padding:10px;
+  border-radius:10px;
+}
+
+/* KPI cards */
+.cards {
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:15px;
+  margin-top:20px;
+}
+
+.card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(15px);
+  padding:20px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.08);
+}
+
+.card h2 {
+  margin:0;
+  font-size:28px;
+}
+
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 4px;
+}
+
+/* chart */
+.chartBox {
+  margin-top:30px;
+  background: rgba(255,255,255,0.05);
+  padding:20px;
+  border-radius:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">🌿 Sanctuary BI</div>
+  <p>Analytics Panel</p>
+  <p>Sessions</p>
+  <p>Users</p>
+  <p>Engagement</p>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="topbar">
+    <h2>Dashboard</h2>
+
+    <select id="filter">
+      <option value="1">Today</option>
+      <option value="7">7 Days</option>
+      <option value="30">30 Days</option>
+      <option value="all">All Time</option>
+    </select>
+  </div>
+
+  <!-- KPIs -->
+  <div class="cards">
+    <div class="card">
+      <p>Sessions</p>
+      <h2 id="sessions">0</h2>
+    </div>
+
+    <div class="card">
+      <p>Total Time (min)</p>
+      <h2 id="time">0</h2>
+    </div>
+
+    <div class="card">
+      <p>Avg Session (sec)</p>
+      <h2 id="avg">0</h2>
+    </div>
+  </div>
+
+  <!-- V2 & V3 METRIC CARDS -->
+  <div class="cards">
+    <div class="card">
+      <p style="font-weight:600; margin-bottom:12px;">Device Type</p>
+      <div id="device-breakdown">Loading...</div>
+    </div>
+    
+    <div class="card">
+      <p style="font-weight:600; margin-bottom:12px;">Top Referrers</p>
+      <div id="referrer-list">Loading...</div>
+    </div>
+    
+    <div class="card">
+      <p style="font-weight:600; margin-bottom:12px;">Common Feelings</p>
+      <div id="feeling-list">Loading...</div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="chartBox">
+    <canvas id="chart"></canvas>
+  </div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uwaclfeptosaterfimqn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3t70TIXLzaJTj1CngUDVzQ_yOQ91uHw"; 
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let chart;
+
+document.getElementById("filter").addEventListener("change", load);
+
+load();
+
+async function load() {
+  let days = document.getElementById("filter").value;
+
+  let from = new Date();
+  if(days !== "all") from.setDate(from.getDate() - Number(days));
+  else from = new Date(0);
+
+  // Fetch sorted ascending chronologically
+  const { data } = await supabase
+    .from("sessions")
+    .select("*")
+    .gte("session_start", from.getTime())
+    .order("session_start", { ascending: true });
+
+  if(!data) return;
+
+  const sessions = data.length;
+  const total = data.reduce((a,b)=>a+(b.session_duration||0),0);
+  const avg = sessions ? total/sessions/1000 : 0;
+
+  document.getElementById("sessions").innerText = sessions;
+  document.getElementById("time").innerText = (total/60000).toFixed(2);
+  document.getElementById("avg").innerText = avg.toFixed(2);
+
+  // Calculate Breakdown Maps (V2 & V3)
+  const deviceCounts = {};
+  const referrerCounts = {};
+  const emotionCounts = {};
+  const grouped = {};
+
+  data.forEach(d => {
+    // 1. Group for chart
+    const day = new Date(d.session_start).toDateString();
+    grouped[day] = (grouped[day]||0)+1;
+
+    // 2. Device Types
+    if (d.device_type) {
+      deviceCounts[d.device_type] = (deviceCounts[d.device_type] || 0) + 1;
+    }
+
+    // 3. Referrers
+    if (d.referrer) {
+      referrerCounts[d.referrer] = (referrerCounts[d.referrer] || 0) + 1;
+    }
+
+    // 4. Emotions
+    if (d.emotion_tag) {
+      emotionCounts[d.emotion_tag] = (emotionCounts[d.emotion_tag] || 0) + 1;
+    }
+  });
+
+  // Display Device Breakdown
+  let deviceHtml = "";
+  Object.keys(deviceCounts).forEach(k => {
+    const pct = ((deviceCounts[k] / sessions) * 100).toFixed(0);
+    deviceHtml += `<div class="breakdown-item"><span>${k}</span><strong>${deviceCounts[k]} (${pct}%)</strong></div>`;
+  });
+  document.getElementById("device-breakdown").innerHTML = deviceHtml || "No data yet";
+
+  // Display Top Referrers (Sorted highest to lowest, max 4 items)
+  let refHtml = "";
+  Object.keys(referrerCounts)
+    .sort((a, b) => referrerCounts[b] - referrerCounts[a])
+    .slice(0, 4)
+    .forEach(k => {
+      refHtml += `<div class="breakdown-item"><span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:140px;">${k}</span><strong>${referrerCounts[k]}</strong></div>`;
+    });
+  document.getElementById("referrer-list").innerHTML = refHtml || "No data yet";
+
+  // Display Top Feelings (Sorted highest to lowest, max 4 items)
+  let feelingHtml = "";
+  Object.keys(emotionCounts)
+    .sort((a, b) => emotionCounts[b] - emotionCounts[a])
+    .slice(0, 4)
+    .forEach(k => {
+      feelingHtml += `<div class="breakdown-item"><span>${k}</span><strong>${emotionCounts[k]}</strong></div>`;
+    });
+  document.getElementById("feeling-list").innerHTML = feelingHtml || "No check-ins yet";
+
+  // Render Line Chart
+  const labels = Object.keys(grouped);
+  const values = Object.values(grouped);
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type:"line",
+    data:{
+      labels,
+      datasets:[{
+        label:"Sessions",
+        data:values,
+        borderColor:"#4ade80",
+        backgroundColor:"rgba(74, 222, 128, 0.1)",
+        fill:true,
+        tension:0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            color: 'rgba(255, 255, 255, 0.7)'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.7)'
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.7)'
+          }
+        }
+      }
+    }
+  });
+}
+</script>
+
+</body>
+</html>
