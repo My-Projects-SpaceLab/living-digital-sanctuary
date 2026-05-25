@@ -49,34 +49,49 @@ const device_type =
 
 // Insert the initial session row on page load (Write 1 of 2)
 async function startSession() {
-    if (!SUPABASE_URL || !SUPABASE_KEY) return;
+    console.log("START SESSION RUNNING");
+
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        console.log("Missing Supabase credentials");
+        return;
+    }
+
+    const payload = {
+        session_id: sessionId,
+        device_id: deviceId,
+        visits: visits,
+        session_start: sessionStart,
+        session_duration: 0,
+        screen_w: window.innerWidth,
+        screen_h: window.innerHeight,
+        referrer: referrer,
+        device_type: device_type,
+        emotion_tag: null
+    };
+
+    console.log("SENDING DATA:", payload);
+
     try {
-        await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "apikey": SUPABASE_KEY,
                 "Authorization": `Bearer ${SUPABASE_KEY}`,
-                "Prefer": "return=minimal"
+                "Prefer": "return=representation"
             },
-            body: JSON.stringify({
-                session_id: sessionId,
-                device_id: deviceId,
-                visits: visits,
-                session_start: sessionStart,
-                session_duration: 0,
-                screen_w: window.innerWidth,
-                screen_h: window.innerHeight,
-                referrer: referrer,
-                device_type: device_type,
-                emotion_tag: null
-            })
+            body: JSON.stringify(payload)
         });
+
+        console.log("STATUS:", response.status);
+
+        const text = await response.text();
+        console.log("SUPABASE RESPONSE:", text);
+
     } catch (e) {
-        console.error("Supabase session start error:", e);
+        console.error("SUPABASE ERROR:", e);
     }
 }
-
 // Update the final session duration on exit (Write 2 of 2)
 async function endSession() {
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
