@@ -42,7 +42,10 @@ const sessionId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() 
 
 // V2 Signals
 const referrer = document.referrer || "direct";
-const device_type = /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop";
+const device_type = 
+  /iPad|Tablet/i.test(navigator.userAgent) ? "tablet" :
+  /Mobi|Android/i.test(navigator.userAgent) ? "mobile" :
+  "desktop";
 
 // Insert the initial session row on page load (Write 1 of 2)
 async function startSession() {
