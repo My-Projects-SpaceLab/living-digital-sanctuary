@@ -49,7 +49,7 @@ const device_type =
 
 // Insert the initial session row on page load (Write 1 of 2)
 async function startSession() {
-    if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.includes("uwaclfeptos")) return;
+    if (!SUPABASE_URL || !SUPABASE_KEY) return;
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
             method: "POST",
@@ -79,7 +79,7 @@ async function startSession() {
 
 // Update the final session duration on exit (Write 2 of 2)
 async function endSession() {
-    if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.includes("uwaclfeptos")) return;
+    if (!SUPABASE_URL || !SUPABASE_KEY) return;
     const sessionDuration = Date.now() - sessionStart;
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/sessions?session_id=eq.${sessionId}`, {
