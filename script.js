@@ -1,3 +1,9 @@
+// ── CONFIGURATION: FORMSPREE LINK ────────────────────────────────
+// Copy your Formspree URL from your dashboard and paste it here.
+// Example: "https://formspree.io/f/xbjnqypo"
+const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
+// ──────────────────────────────────────────────────────────────────
+
 const canvas   = document.getElementById('canvas');
 const ctx      = canvas.getContext('2d');
 const card     = document.getElementById('editor-card');
@@ -124,23 +130,73 @@ setTimeout(() => {
     if (!promptShown) { promptShown = true; promptOverlay.classList.add('visible'); }
 }, 5 * 60 * 1000);
 
+
+// ── [START] FORMSPREE SUBMISSION UTILITY ──
+let selectedChoice = "";
+
+async function sendToFormspree(choice, comment) {
+    if (!FORMSPREE_URL || FORMSPREE_URL.includes("YOUR_ENDPOINT_ID")) {
+        console.log("Formspree URL not configured. Data is:", { choice, comment });
+        return;
+    }
+    try {
+        await fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json' 
+            },
+            body: JSON.stringify({
+                feeling_choice: choice,
+                user_comment: comment,
+                typing_speed_cpm: cpm,
+                sanctuary_state: stateName,
+                timestamp: new Date().toISOString()
+            })
+        });
+    } catch(e) {
+        console.error("Formspree submit error:", e);
+    }
+}
+// ── [END] FORMSPREE SUBMISSION UTILITY ──
+
+
 // Prompt interactions
 document.querySelectorAll('.prompt-choice-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+        // Save the chosen emotion option
+        selectedChoice = btn.textContent.trim();
+        
         promptQuestion.style.display  = 'none';
         promptChoices.style.display   = 'none';
         promptComment.style.display   = 'flex';
     });
 });
+
 document.getElementById('btn-notsure').addEventListener('click', () => {
+    selectedChoice = "Not Sure";
     promptQuestion.style.display = 'none';
     promptChoices.style.display  = 'none';
+    
+    // Submit straight to Formspree when skipped
+    sendToFormspree(selectedChoice, "");
+    
     shareCard.hidden = false;
 });
+
 document.getElementById('btn-submit-comment').addEventListener('click', () => {
+    // Find text inside the comment field (works with input or textarea)
+    const commentField = promptComment.querySelector('textarea') || promptComment.querySelector('input') || document.getElementById('comment-input');
+    const commentText = commentField ? commentField.value.trim() : "";
+    
     promptComment.style.display = 'none';
+    
+    // Submit choice and comment together
+    sendToFormspree(selectedChoice, commentText);
+    
     shareCard.hidden = false;
 });
+
 document.getElementById('btn-dismiss').addEventListener('click', () => {
     promptOverlay.classList.remove('visible');
 });
@@ -210,21 +266,64 @@ function particleColor(hv, alpha) {
 const MAX_P = 800, TAIL = 32;
 class Particle {
     constructor() { this.init(true); }
+    
+    // ── [START] ALL-EDGE PARTICLE SPAWNER ──
     init(s) {
-        this.x=s?Math.random()*W:(Math.random()<0.5?-12:W+12);
-        this.y=s?Math.random()*H:Math.random()*H;
+        if (s) {
+            this.x = Math.random() * W;
+            this.y = Math.random() * H;
+        } else {
+            // Pick a random screen edge to spawn from (Left, Right, Top, or Bottom)
+            const edge = Math.floor(Math.random() * 4);
+            if (edge === 0) { this.x = -15; this.y = Math.random() * H; }      // Left
+            else if (edge === 1) { this.x = W + 15; this.y = Math.random() * H; } // Right
+            else if (edge === 2) { this.x = Math.random() * W; this.y = -15; }   // Top
+            else { this.x = Math.random() * W; this.y = H + 15; }                  // Bottom
+        }
         this.vx=0; this.vy=0;
         this.spd=(0.5+Math.random()*0.7)*(1-stateBlend*0.45);
         this.life=0; this.maxL=240+Math.random()*420;
         this.hv=Math.random(); this.sz=0.6+Math.random()*1.4;
         this.trail=[];
     }
+    // ── [END] ALL-EDGE PARTICLE SPAWNER ──
+    
     update(t) {
         this.life++;
         const slow=1-stateBlend*0.52;
         const ang=fieldAngle(this.x,this.y,t);
         this.vx+=Math.cos(ang)*0.068*slow;
         this.vy+=Math.sin(ang)*0.068*slow;
+
+        // ── [START] PARTICLE INWARD SWIRL FOR RESTORE STATE ──
+        if (stateBlend > 0.5) {
+            // As stateBlend moves from 0.5 to 1.0 (Restore state), pull increases
+            const pullFactor = (stateBlend - 0.5) * 2; 
+            
+            // Target is the wandering glow center
+            const cx = W / 2 + glowOffsetX;
+            const cy = H / 2 + glowOffsetY;
+            
+            const dx = cx - this.x;
+            const dy = cy - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            
+            // Normalize direction to center
+            const ndx = dx / dist;
+            const ndy = dy / dist;
+            
+            // Perpendicular direction for orbiting motion (clockwise)
+            const tx = -ndy;
+            const ty = ndx;
+            
+            // Add a mixture of center gravity (40%) and orbital swirl (60%)
+            // This gathers the particles into a cozy swirling field around the warm glow
+            const force = 0.05 * pullFactor;
+            this.vx += (ndx * 0.40 + tx * 0.60) * force;
+            this.vy += (ndy * 0.40 + ty * 0.60) * force;
+        }
+        // ── [END] PARTICLE INWARD SWIRL FOR RESTORE STATE ──
+
         const d=0.912+stateBlend*0.054;
         this.vx*=d; this.vy*=d;
         this.trail.push({x:this.x,y:this.y});
@@ -232,6 +331,7 @@ class Particle {
         this.x+=this.vx*this.spd; this.y+=this.vy*this.spd;
         if(this.life>this.maxL||this.x<-90||this.x>W+90||this.y<-90||this.y>H+90) this.init(false);
     }
+    
     draw() {
         if(this.trail.length<3) return;
         const la=Math.min(1,this.life/50)*Math.min(1,(this.maxL-this.life)/50);
