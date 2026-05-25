@@ -31,30 +31,26 @@
         </div>
     </div>
 
-    <!-- State label bottom centre -->
-    <div id="state-label">flow</div>
+    <!-- Privacy notice bottom centre — replaces state label -->
+    <div id="privacy-notice">
+        <p>No data leaves your browser &nbsp;·&nbsp; nothing is stored</p>
+    </div>
 
     <!-- Share button bottom right — fades in after 30s -->
     <button id="share-btn">share this space</button>
 
     <!-- 5-min prompt overlay -->
     <div id="prompt-overlay" role="dialog">
-
         <p id="prompt-question">You've been here a while.<br>How do you feel?</p>
-
         <div id="prompt-choices">
             <button class="prompt-choice-btn" id="btn-better">Feeling better</button>
             <button class="prompt-choice-btn" id="btn-calm">Calm</button>
             <button id="btn-notsure">Not sure yet</button>
         </div>
-
-        <!-- Comment field — shown after Feeling better / Calm -->
         <div id="prompt-comment">
             <textarea id="comment-text" placeholder="Anything you want to say about it — or nothing at all."></textarea>
             <button id="btn-submit-comment">Continue →</button>
         </div>
-
-        <!-- Share card -->
         <div id="share-card" hidden>
             <p class="share-intro">Something peaceful, for someone you care about.</p>
             <p id="share-url">living-digital-sanctuary.space</p>
@@ -64,7 +60,6 @@
             </div>
             <button id="btn-dismiss" class="dismiss">Close</button>
         </div>
-
     </div>
 
     <script src="script.js"></script>
