@@ -7,6 +7,29 @@ const SUPABASE_KEY = "sb_publishable_3t70TIXLzaJTj1CngUDVzQ_yOQ91uHw";
 const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
 // ──────────────────────────────────────────────────────────────────
 
+// ── GLOBAL STATE VARIABLES (Moved to top to prevent ReferenceErrors) ──
+let stateBlend         = 0;
+let targetBlend        = 0;
+let stateName          = 'flow';
+let currentCardOpacity = 1.0;
+
+let lastActive  = Date.now();
+let keyTimes    = [];
+let cpm         = 0;
+let promptShown = false;
+let userTouched = false;
+
+// Glow & Breath variables
+let breathPhase = 0;
+let glowOffsetX = 0, glowOffsetY = 0, glowTargetX = 0, glowTargetY = 0;
+
+// Mouse tracking variables
+let mouseX = -1000, mouseY = -1000;
+let lastMouseX = -1000, lastMouseY = -1000;
+let lastMouseMoveTime = Date.now();
+let mouseSpeed = 0;
+// ──────────────────────────────────────────────────────────────────
+
 const canvas   = document.getElementById('canvas');
 const ctx      = canvas.getContext('2d');
 const card     = document.getElementById('editor-card');
@@ -92,6 +115,7 @@ async function startSession() {
         console.error("SUPABASE ERROR:", e);
     }
 }
+
 // Update the final session duration on exit (Write 2 of 2)
 async function endSession() {
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
@@ -148,7 +172,7 @@ function safeEndSession() {
     endSession();
 }
 
-// Fixed syntax layout block here (removed stray bracket/brace)
+// Fixed syntax layout block here
 window.addEventListener("pagehide", safeEndSession);
 window.addEventListener("beforeunload", safeEndSession);
 document.addEventListener("visibilitychange", () => {
@@ -218,12 +242,12 @@ setInterval(() => {
     }, 1200);
 }, 5000);
 
-// ── INTERACTION SENSING & TEXT PARTICLES ──────────────────────────
-let lastActive  = Date.now();
-let keyTimes    = [];
-let cpm         = 0;
-let promptShown = false;
-let userTouched = false; // tracks if user ever typed
+// ── INTERACTION SENSING & TYPING DISSOLVE ──────────────────────────
+function recordActivity() {
+    lastActive = Date.now();
+    keyTimes.push(Date.now());
+    userTouched = true;
+}
 
 // ── [START] TEXT-TO-PARTICLES SYSTEM ──
 const textParticles = [];
@@ -232,7 +256,7 @@ class TextParticle {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        // Start moving slowly upwards and outwards
+        // Start rising, floating slightly outwards
         this.vx = (Math.random() - 0.5) * 1.4;
         this.vy = -Math.random() * 1.5 - 0.4;
         this.spd = (0.6 + Math.random() * 0.6) * (1 - stateBlend * 0.35);
@@ -245,7 +269,7 @@ class TextParticle {
     update(t) {
         this.life++;
         
-        // Blend initial upward movement into the wind flow field direction
+        // Start by rising, then smoothly blend into the wind flow field
         const windWeight = Math.min(1, this.life / 25);
         const windAng = fieldAngle(this.x, this.y, t);
         const windVx = Math.cos(windAng) * 0.068 * (1 - stateBlend * 0.52);
@@ -254,12 +278,12 @@ class TextParticle {
         this.vx = this.vx * (1 - windWeight * 0.06) + windVx * windWeight;
         this.vy = this.vy * (1 - windWeight * 0.06) + windVy * windWeight;
 
-        // Add natural chaotic drift jitter
+        // Jitter drift
         const jitter = 0.01 + stateBlend * 0.015;
         this.vx += (Math.random() - 0.5) * jitter;
         this.vy += (Math.random() - 0.5) * jitter;
 
-        // Thermal lift in the restore state
+        // Thermal lift in restore state
         if (stateBlend > 0.5) {
             const lift = (stateBlend - 0.5) * 2;
             this.vy -= 0.006 * lift;
@@ -277,7 +301,6 @@ class TextParticle {
     draw() {
         if (this.trail.length < 3) return;
         const la = Math.min(1, this.life / 20) * Math.min(1, (this.maxL - this.life) / 30);
-        // Brighter base opacity for typed text particles
         const base = (0.28 + stateBlend * 0.12) * la;
         for (let i = 1; i < this.trail.length; i++) {
             const f = i / this.trail.length;
@@ -293,18 +316,14 @@ class TextParticle {
 }
 
 function handleTypingSensing(e) {
-    lastActive = Date.now();
-    keyTimes.push(Date.now());
-    userTouched = true;
+    recordActivity();
 
-    // Spawn text particles inside the card notepad area
+    // Spawn visual text particles inside the card notepad area
     if (textParticles.length < 250) {
         const rect = textarea.getBoundingClientRect();
-        // Spawn from a random spot inside the notepad boundaries
         const spawnX = rect.left + Math.random() * rect.width;
         const spawnY = rect.top + Math.random() * rect.height;
         
-        // Spawn 3 particles per keystroke
         for (let i = 0; i < 3; i++) {
             textParticles.push(new TextParticle(spawnX, spawnY));
         }
@@ -314,7 +333,56 @@ function handleTypingSensing(e) {
 textarea.addEventListener('input', handleTypingSensing);
 textarea.addEventListener('keydown', handleTypingSensing);
 document.getElementById('editor-title').addEventListener('input', handleTypingSensing);
-// ── [END] TEXT-TO-PARTICLES SYSTEM ──
+
+// ── [START] 3-SECOND TEXT DISSOLVE SYSTEM ──
+// Deletes text character-by-character if idle for 3 seconds, releasing particles
+setInterval(() => {
+    const idle = (Date.now() - lastActive) / 1000;
+    if (idle >= 3 && textarea.value.length > 0) {
+        const text = textarea.value;
+        textarea.value = text.slice(0, -1);
+        
+        const rect = textarea.getBoundingClientRect();
+        const spawnX = rect.left + Math.random() * rect.width;
+        const spawnY = rect.bottom - 20; // Dissolves near the bottom line
+        
+        for (let i = 0; i < 3; i++) {
+            textParticles.push(new TextParticle(spawnX, spawnY));
+        }
+        
+        // Reset placeholders if text is fully cleared
+        if (textarea.value.length === 0) {
+            textarea.dispatchEvent(new Event('input'));
+        }
+    }
+}, 60);
+// ── [END] 3-SECOND TEXT DISSOLVE SYSTEM ──
+
+
+// ── [START] SLOW MOUSE INTERACTION SENSING ──
+window.addEventListener('mousemove', (e) => {
+    const now = Date.now();
+    const dt = now - lastMouseMoveTime || 1;
+    lastMouseMoveTime = now;
+    
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    
+    if (lastMouseX !== -1000) {
+        const dx = mouseX - lastMouseX;
+        const dy = mouseY - lastMouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        mouseSpeed = dist / dt; // pixels per millisecond
+    }
+    
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+    
+    // Register activity on mouse move to reset idle timers
+    recordActivity();
+});
+// ── [END] SLOW MOUSE INTERACTION SENSING ──
+
 
 // Clicking the dimmed card bumps it to 60% and focuses textarea
 card.addEventListener('click', () => {
@@ -423,11 +491,6 @@ document.getElementById('btn-copy-link').addEventListener('click', async functio
 document.getElementById('btn-native-share').addEventListener('click', function() { doShare(this); });
 shareBtn.addEventListener('click', () => doShare(shareBtn));
 
-// ── STATE ENGINE ──────────────────────────────────────────────────
-let stateBlend         = 0;
-let targetBlend        = 0;
-let stateName          = 'flow';
-let currentCardOpacity = 1.0;
 
 function updateState() {
     const idle = (Date.now() - lastActive) / 1000;
@@ -518,6 +581,20 @@ class Particle {
             this.vy -= 0.006 * lift; 
         }
 
+        // ── [START] GENTLE MOUSE INTERACTION (SLOW MOVE ONLY) ──
+        if (mouseX !== -1000 && mouseSpeed < 0.8) {
+            const mdx = this.x - mouseX;
+            const mdy = this.y - mouseY;
+            const mdist = Math.sqrt(mdx * mdx + mdy * mdy) || 1;
+            if (mdist < 120) {
+                // Slower mouse movements create a stronger, gentler push
+                const force = (1 - mdist / 120) * 0.14 * (1 - mouseSpeed);
+                this.vx += (mdx / mdist) * force;
+                this.vy += (mdy / mdist) * force;
+            }
+        }
+        // ── [END] GENTLE MOUSE INTERACTION (SLOW MOVE ONLY) ──
+
         const d=0.912+stateBlend*0.054;
         this.vx*=d; this.vy*=d;
         this.trail.push({x:this.x,y:this.y});
@@ -544,14 +621,6 @@ class Particle {
 const particles=Array.from({length:MAX_P},()=>new Particle());
 
 // ── BREATHING GLOW ────────────────────────────────────────────────
-let breathPhase = 0;
-let glowOffsetX = 0, glowOffsetY = 0, glowTargetX = 0, glowTargetY = 0;
-
-setInterval(() => {
-    glowTargetX = (Math.random() - 0.5) * W * 0.12;
-    glowTargetY = (Math.random() - 0.5) * H * 0.10;
-}, 6000);
-
 function drawBreath() {
     const vis = Math.max(0, (stateBlend - 0.2) / 0.8);
     if (vis < 0.01) return;
