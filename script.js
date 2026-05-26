@@ -487,7 +487,7 @@ function updateState() {
     if(spaceHeld) {
         targetCard = 0.04;
     } else if(!userTouched) {
-        targetCard = 0.65; // Never shown until first interaction
+        targetCard = 0.7; // Never shown until first interaction
     } else if(idleSec > 18) {
         targetCard = 0.04;
     } else if(idleSec > 8) {
@@ -551,55 +551,53 @@ class Particle {
 
         // ── [START] MOUSE PUSH — slow moves only, like hand through water ──
         // mouseSpeed is in px/ms. Threshold 0.4 = 400px/s = gentle glide
-        if(mouseX > -9000) {
+        // ── SOFT FLUID MOUSE INTERACTION ──
+if(mouseX > -9000) {
 
     const dx = this.x - mouseX;
     const dy = this.y - mouseY;
 
     const dist = Math.sqrt(dx*dx + dy*dy) || 1;
 
-    const radius = 220;
+    const radius = 150;
 
     if(dist < radius) {
 
-        // normalized direction away from cursor
         const nx = dx / dist;
         const ny = dy / dist;
 
-        // stronger near cursor
-        const falloff = 1 - dist / radius;
+        // very smooth edge falloff
+        const falloff = Math.pow(1 - dist / radius, 2);
 
-        // cursor movement direction
+        // gentle cursor motion
         const mvx = mouseX - lastMouseX;
         const mvy = mouseY - lastMouseY;
 
-        // push force
-        const push = falloff * 0.65;
+        // MUCH softer forces
+        const push  = 0.045 * falloff;
+        const wake  = 0.0025 * falloff;
+        const swirl = 0.018 * falloff;
 
-        // wake force (dragging flow behind cursor)
-        const wake = 0.03;
-
-        // swirl around cursor
-        const swirl = 0.12 * falloff;
-
+        // soft outward drift
         this.vx += nx * push;
         this.vy += ny * push;
 
-        // cursor motion drags nearby particles
-        this.vx += mvx * wake * falloff;
-        this.vy += mvy * wake * falloff;
+        // subtle current dragging
+        this.vx += mvx * wake;
+        this.vy += mvy * wake;
 
-        // tangential swirl
+        // gentle circular flow
         this.vx += -ny * swirl;
         this.vy +=  nx * swirl;
     }
 }
         // ── [END] MOUSE PUSH ──────────────────────────────────────
 
-        const d=0.912+stateBlend*0.054;
-        this.vx*=d; this.vy*=d;
-        this.vx = Math.max(-2, Math.min(2, this.vx));
-        this.vy = Math.max(-2, Math.min(2, this.vy));
+        const d = 0.86 + stateBlend * 0.045;
+        this.vx *= 0.985;
+        this.vy *= 0.985;
+        this.vx = Math.max(-0.8, Math.min(0.8, this.vx));
+        this.vy = Math.max(-0.8, Math.min(0.8, this.vy));
         this.trail.push({x:this.x,y:this.y});
         if(this.trail.length>TAIL) this.trail.shift();
         this.x+=this.vx*this.spd;
