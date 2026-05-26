@@ -280,7 +280,7 @@ const isTrulySettled =
 
 if (isTrulySettled && !dissolveActive && hasText) {
     startDissolve();
-}
+}}, 500);
 
 // ── BUILD WORD QUEUE (INDEXED SNAPSHOT) ──────────────────────────
 function buildDissolveQueue(text) {
