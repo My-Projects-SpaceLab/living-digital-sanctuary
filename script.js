@@ -399,7 +399,6 @@ function handleTyping() {
     userTouched = true;
     stopDissolve(); // Stop dissolve the moment they type again
 
-}
 textarea.addEventListener('input',   handleTyping);
 textarea.addEventListener('keydown', handleTyping);
 document.getElementById('editor-title').addEventListener('input', handleTyping);
