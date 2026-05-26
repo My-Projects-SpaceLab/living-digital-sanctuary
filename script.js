@@ -268,16 +268,19 @@ let dissolveQueue = [];
 // ── IDLE CHECK ────────────────────────────────────────────────────
 let idleCheckInterval = setInterval(() => {
     const idleSec = isTyping ? 0 : (Date.now() - lastTyped) / 1000;
+    const now = Date.now();
 
-    if (
-        idleSec >= 3 &&
-        !dissolveActive &&
-        textarea.value.trim().length > 0
-    ) {
-        startDissolve();
-    }
-}, 500);
+const timeSinceTyped = now - lastTyped;
+const hasText = textarea.value.trim().length > 0;
 
+const isTrulySettled =
+    timeSinceTyped > 4000 &&   // longer delay = removes false pauses
+    !isTyping &&
+    cpm < 35;                  // prevents active thinking states
+
+if (isTrulySettled && !dissolveActive && hasText) {
+    startDissolve();
+}
 
 // ── BUILD WORD QUEUE (INDEXED SNAPSHOT) ──────────────────────────
 function buildDissolveQueue(text) {
@@ -375,7 +378,7 @@ function stopDissolve() {
 // ── END SYSTEM ───────────────────────────────────────────────────
 
 
-// ── [START] TYPING SENSING ────────────────────────────────────────
+// ── [START] TYPING SENSING ───*main risk is delayed state switching, isTyping may stay longer than expected*───────────────
 let lastKeyEvent = 0;
 
 function handleTyping() {
@@ -393,8 +396,10 @@ function handleTyping() {
     clearTimeout(typingCooldownTimer);
     typingCooldownTimer = setTimeout(() => {
         isTyping = false;
-    }, 4000);
+    }, 5000);
 }
+
+// this bloack is global,idle detection becomes inaccurate
     lastTyped = Date.now();
     keyTimes.push(Date.now());
     userTouched = true;
@@ -456,7 +461,7 @@ window.addEventListener('mousemove', (e) => {
 // ── HUD UPDATE ────────────────────────────────────────────────────
 setInterval(() => {
     const now = Date.now();
-    keyTimes = keyTimes.filter(t => now-t < 12000);
+    keyTimes = keyTimes.filter(t => now-t < 15000);
     cpm = Math.round(keyTimes.length * 5);
     const idleSec = Math.round((now - lastTyped) / 1000);
     hudState.textContent = stateName.charAt(0).toUpperCase()+stateName.slice(1);
