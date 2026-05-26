@@ -4,28 +4,29 @@ const SUPABASE_KEY = "sb_publishable_3t70TIXLzaJTj1CngUDVzQ_yOQ91uHw";
 const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
 // ──────────────────────────────────────────────────────────────────
 
-// ── GLOBAL STATE (declared first to prevent hoisting errors) ──────
+// ── GLOBAL STATE (top to prevent hoisting errors) ─────────────────
 let stateBlend         = 0;
 let targetBlend        = 0;
 let stateName          = 'flow';
-let currentCardOpacity = 1.0;
+let currentCardOpacity = 0.0; // starts invisible, wakes on first keypress
 
-let lastActive = Date.now(); // mouse + typing (controls state engine)
-let lastTyped  = Date.now(); // typing only (controls dissolve timer)
+// Separate timers: typing only vs general
+let lastTyped  = Date.now(); // only keyboard input
 let keyTimes   = [];
 let cpm        = 0;
 let promptShown = false;
 let userTouched = false;
+let spaceHeld   = false;    // spacebar hold tracking
 
-// Glow & Breath variables
+// Glow & breath
 let breathPhase = 0;
 let glowOffsetX = 0, glowOffsetY = 0, glowTargetX = 0, glowTargetY = 0;
 
-// Mouse tracking variables
+// Mouse — tracked separately, never affects card
 let mouseX = -9999, mouseY = -9999;
 let lastMouseX = -9999, lastMouseY = -9999;
-let lastMouseMoveTime = Date.now();
-let mouseSpeed = 0;
+let lastMouseTime = Date.now();
+let mouseSpeed = 0; // px per ms
 // ──────────────────────────────────────────────────────────────────
 
 const canvas   = document.getElementById('canvas');
@@ -48,7 +49,7 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 window.addEventListener('resize', resize);
 resize();
 
-// ── DEVICE, SESSION & METRIC SIGNALS ──────────────────────────────
+// ── SESSION TRACKING ──────────────────────────────────────────────
 let deviceId = localStorage.getItem("device_id");
 if (!deviceId) {
     deviceId = typeof crypto.randomUUID === 'function'
@@ -56,7 +57,6 @@ if (!deviceId) {
         : 'dev-' + Math.random().toString(36).substring(2, 15);
     localStorage.setItem("device_id", deviceId);
 }
-
 let visits = Number(localStorage.getItem("visits") || 0) + 1;
 localStorage.setItem("visits", visits);
 
@@ -72,77 +72,44 @@ const device_type =
 
 async function startSession() {
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
-    const payload = {
-        session_id: sessionId, device_id: deviceId, visits,
-        session_start: sessionStart, session_duration: 0,
-        screen_w: window.innerWidth, screen_h: window.innerHeight,
-        referrer, device_type, emotion_tag: null
-    };
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
+        await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": SUPABASE_KEY,
-                "Authorization": `Bearer ${SUPABASE_KEY}`,
-                "Prefer": "return=representation"
-            },
-            body: JSON.stringify(payload)
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Prefer": "return=representation" },
+            body: JSON.stringify({ session_id: sessionId, device_id: deviceId, visits, session_start: sessionStart, session_duration: 0, screen_w: window.innerWidth, screen_h: window.innerHeight, referrer, device_type, emotion_tag: null })
         });
-        console.log("Session started:", response.status);
-    } catch (e) { console.error("Supabase start error:", e); }
+    } catch(e) { console.error("Supabase start:", e); }
 }
-
 async function endSession() {
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
-    const sessionDuration = Date.now() - sessionStart;
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/sessions?session_id=eq.${sessionId}`, {
             method: "PATCH", keepalive: true,
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": SUPABASE_KEY,
-                "Authorization": `Bearer ${SUPABASE_KEY}`,
-                "Prefer": "return=minimal"
-            },
-            body: JSON.stringify({ session_duration: sessionDuration })
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Prefer": "return=minimal" },
+            body: JSON.stringify({ session_duration: Date.now() - sessionStart })
         });
-    } catch (e) { console.error("Supabase end error:", e); }
+    } catch(e) {}
 }
-
 async function updateSessionEmotion(tag) {
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/sessions?session_id=eq.${sessionId}`, {
             method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": SUPABASE_KEY,
-                "Authorization": `Bearer ${SUPABASE_KEY}`,
-                "Prefer": "return=minimal"
-            },
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Prefer": "return=minimal" },
             body: JSON.stringify({ emotion_tag: tag })
         });
-    } catch (e) { console.error("Supabase emotion error:", e); }
+    } catch(e) {}
 }
-
 startSession();
-
 let sessionEnded = false;
-function safeEndSession() {
-    if (sessionEnded) return;
-    sessionEnded = true;
-    endSession();
-}
+function safeEndSession() { if(sessionEnded) return; sessionEnded=true; endSession(); }
 window.addEventListener("pagehide", safeEndSession);
 window.addEventListener("beforeunload", safeEndSession);
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") safeEndSession();
-});
+document.addEventListener("visibilitychange", () => { if(document.visibilityState==="hidden") safeEndSession(); });
 // ── END SESSION TRACKING ──────────────────────────────────────────
 
 
-// ── SHARE MESSAGES ────────────────────────────────────────────────
+// ── SHARE ─────────────────────────────────────────────────────────
 const SHARE_MESSAGES = [
     "Thought you might need this.",
     "For when your brain feels loud.",
@@ -154,8 +121,7 @@ const SHARE_MESSAGES = [
     "Something peaceful, to express yourself.",
 ];
 function getShareText() {
-    const msg = SHARE_MESSAGES[Math.floor(Math.random() * SHARE_MESSAGES.length)];
-    return `${msg}\nhttps://my-projects-spacelab.github.io/living-digital-sanctuary/`;
+    return `${SHARE_MESSAGES[Math.floor(Math.random()*SHARE_MESSAGES.length)]}\nhttps://my-projects-spacelab.github.io/living-digital-sanctuary/`;
 }
 async function doShare(btn) {
     const text = getShareText();
@@ -168,7 +134,7 @@ async function doShare(btn) {
     } catch(e) {}
 }
 
-// ── CYCLING EMOTIONAL PLACEHOLDERS ───────────────────────────────
+// ── CYCLING PLACEHOLDERS ──────────────────────────────────────────
 const PROMPTS = [
     "What are you feeling right now?",
     "What's been sitting heavy on your mind?",
@@ -188,319 +154,364 @@ const PROMPTS = [
 ];
 let promptIdx = 0;
 textarea.setAttribute('placeholder', PROMPTS[0]);
-
 setInterval(() => {
     if (textarea.value.length > 0) return;
     textarea.classList.add('placeholder-fade');
     setTimeout(() => {
         promptIdx = (promptIdx + 1) % PROMPTS.length;
         textarea.setAttribute('placeholder', PROMPTS[promptIdx]);
-        setTimeout(() => { textarea.classList.remove('placeholder-fade'); }, 80);
+        setTimeout(() => textarea.classList.remove('placeholder-fade'), 80);
     }, 1200);
 }, 5000);
 
 
-// ── NOISE & FIELD (declared early so TextParticle can use them) ────
+// ── NOISE & FIELD (must be above Particle classes) ────────────────
+let t = 0;
 function smoothNoise(x, y, t) {
-    const a = Math.sin(x * 0.011 + t * 0.17) * Math.cos(y * 0.009 + t * 0.12);
-    const b = Math.sin(x * 0.022 - y * 0.016 + t * 0.10) * 0.48;
-    const c = Math.cos(x * 0.007 + y * 0.012 - t * 0.065) * 0.33;
+    const a = Math.sin(x*0.011 + t*0.17) * Math.cos(y*0.009 + t*0.12);
+    const b = Math.sin(x*0.022 - y*0.016 + t*0.10) * 0.48;
+    const c = Math.cos(x*0.007 + y*0.012 - t*0.065) * 0.33;
     return (a + b + c) / 1.81;
 }
-
 function fieldAngle(x, y, t) {
     const speed = 1.0 - stateBlend * 0.55;
     const n1 = smoothNoise(x, y, t * speed);
-    const n2 = smoothNoise(x * 1.5, y * 1.5, t * speed * 0.65 + 8);
+    const n2 = smoothNoise(x*1.5, y*1.5, t*speed*0.65 + 8);
     return n1 * Math.PI * 1.9 + n2 * Math.PI * 0.55;
 }
-
-// ── ORIGINAL BLUE → GREEN → ORANGE COLOR ─────────────────────────
+// ── BLUE → GREEN → ORANGE COLOR ──────────────────────────────────
 function particleColor(hv, alpha) {
     let h = stateBlend < 0.5
         ? 210 + (165 - 210) * (stateBlend / 0.5)
         : 165 + (38  - 165) * ((stateBlend - 0.5) / 0.5);
     h += hv * 14 - 7;
-    return `hsla(${h.toFixed(1)},${(72 - stateBlend * 16).toFixed(1)}%,${(52 + stateBlend * 10).toFixed(1)}%,${alpha.toFixed(4)})`;
+    return `hsla(${h.toFixed(1)},${(72-stateBlend*16).toFixed(1)}%,${(52+stateBlend*10).toFixed(1)}%,${alpha.toFixed(4)})`;
 }
 
-// global time used by TextParticle
-let t = 0;
 
-// ── [START] TEXT-TO-PARTICLES SYSTEM ─────────────────────────────
+// ── TEXT DISSOLVE PARTICLES ───────────────────────────────────────
 const textParticles = [];
 
 class TextParticle {
     constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        // Start rising upward naturally
-        this.vx = (Math.random() - 0.5) * 1.6;
-        this.vy = -(Math.random() * 1.8 + 0.5);
-        this.spd = 0.6 + Math.random() * 0.5;
+        this.x = x + (Math.random()-0.5)*30;
+        this.y = y + (Math.random()-0.5)*18;
+        // Start with random burst direction, then blend into wind
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.8 + Math.random() * 1.6;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed - 0.6; // slight upward bias
+        this.spd = 0.5 + Math.random() * 0.5;
         this.life = 0;
-        this.maxL = 90 + Math.random() * 110;
-        this.hv = Math.random();
-        this.sz = 0.7 + Math.random() * 1.1;
+        this.maxL = 80 + Math.random() * 100;
+        this.hv   = Math.random();
+        this.sz   = 0.5 + Math.random() * 1.0;
         this.trail = [];
-        // How quickly this particle blends into the wind field
-        this.windBlendRate = 0.03 + Math.random() * 0.03;
+        // Each particle blends into wind at different rates — makes it unpredictable
+        this.windRate = 0.02 + Math.random() * 0.05;
     }
-
     update() {
         this.life++;
-        // Gradually hand off velocity to the ambient flow field
-        const windWeight = Math.min(1, this.life * this.windBlendRate);
-        const windAng = fieldAngle(this.x, this.y, t);
-        const windVx  = Math.cos(windAng) * 0.068 * (1 - stateBlend * 0.52);
-        const windVy  = Math.sin(windAng) * 0.068 * (1 - stateBlend * 0.52);
-
-        // Blend: own velocity fades, wind velocity grows
-        this.vx = this.vx * (1 - windWeight * 0.07) + windVx * windWeight * 0.07;
-        this.vy = this.vy * (1 - windWeight * 0.07) + windVy * windWeight * 0.07;
-
-        // Natural jitter
-        this.vx += (Math.random() - 0.5) * 0.012;
-        this.vy += (Math.random() - 0.5) * 0.012;
-
-        // Warm lift in restore state
-        if (stateBlend > 0.5) {
-            this.vy -= 0.005 * (stateBlend - 0.5) * 2;
-        }
-
-        const d = 0.912 + stateBlend * 0.054;
-        this.vx *= d;
-        this.vy *= d;
-
-        this.trail.push({x: this.x, y: this.y});
-        if (this.trail.length > 20) this.trail.shift();
-
-        this.x += this.vx * this.spd;
-        this.y += this.vy * this.spd;
+        // Gradually hand off to the ambient wind field — each particle at its own pace
+        const w = Math.min(1, this.life * this.windRate);
+        const ang  = fieldAngle(this.x, this.y, t);
+        const wxv  = Math.cos(ang) * 0.068 * (1-stateBlend*0.52);
+        const wyv  = Math.sin(ang) * 0.068 * (1-stateBlend*0.52);
+        this.vx = this.vx*(1-w*0.08) + wxv*w*0.08;
+        this.vy = this.vy*(1-w*0.08) + wyv*w*0.08;
+        this.vx += (Math.random()-0.5)*0.012;
+        this.vy += (Math.random()-0.5)*0.012;
+        if(stateBlend>0.5) this.vy -= 0.005*(stateBlend-0.5)*2;
+        const d = 0.912 + stateBlend*0.054;
+        this.vx*=d; this.vy*=d;
+        this.trail.push({x:this.x, y:this.y});
+        if(this.trail.length>18) this.trail.shift();
+        this.x += this.vx*this.spd;
+        this.y += this.vy*this.spd;
     }
-
     draw() {
-        if (this.trail.length < 2) return;
-        const la = Math.min(1, this.life / 18) * Math.min(1, (this.maxL - this.life) / 28);
-        const base = (0.30 + stateBlend * 0.10) * la;
-        for (let i = 1; i < this.trail.length; i++) {
-            const f = i / this.trail.length;
+        if(this.trail.length<2) return;
+        const la = Math.min(1, this.life/15) * Math.min(1, (this.maxL-this.life)/25);
+        const base = (0.32+stateBlend*0.10)*la;
+        for(let i=1;i<this.trail.length;i++){
+            const f = i/this.trail.length;
             ctx.beginPath();
-            ctx.strokeStyle = particleColor(this.hv, f * base);
-            ctx.lineWidth   = f * this.sz * 1.3;
+            ctx.strokeStyle = particleColor(this.hv, f*base);
+            ctx.lineWidth   = f*this.sz*1.2;
             ctx.lineCap     = 'round';
             ctx.moveTo(this.trail[i-1].x, this.trail[i-1].y);
             ctx.lineTo(this.trail[i].x,   this.trail[i].y);
             ctx.stroke();
         }
     }
-
     isDead() {
-        return this.life > this.maxL
-            || this.x < -90 || this.x > W + 90
-            || this.y < -90 || this.y > H + 90;
+        return this.life>this.maxL || this.x<-90||this.x>W+90||this.y<-90||this.y>H+90;
     }
 }
 
-// Spawn text particles at a position inside the card
-function spawnTextParticles(x, y, count = 4) {
-    if (textParticles.length >= 300) return;
-    for (let i = 0; i < count; i++) {
-        textParticles.push(new TextParticle(
-            x + (Math.random() - 0.5) * 20,
-            y + (Math.random() - 0.5) * 12
-        ));
-    }
+// Spawn a burst of particles at a position
+function spawnBurst(x, y, count) {
+    if(textParticles.length >= 350) return;
+    for(let i=0;i<count;i++) textParticles.push(new TextParticle(x, y));
 }
-// ── [END] TEXT-TO-PARTICLES SYSTEM ───────────────────────────────
+
+// ── [START] TEXT DISSOLVE SYSTEM ─────────────────────────────────
+// After 3s idle: words are removed in RANDOM ORDER, quickly,
+// each word spawning a particle burst. Not sequential. Not backspace.
+let dissolveActive = false;
+let dissolveQueue  = []; // shuffled list of char-index ranges to remove
+
+function buildDissolveQueue(text) {
+    // Split into words with their positions, then shuffle randomly
+    const words = [];
+    const regex  = /\S+\s*/g;
+    let match;
+    while((match = regex.exec(text)) !== null) {
+        words.push({ start: match.index, len: match[0].length });
+    }
+    // Fisher-Yates shuffle so removal order is completely unpredictable
+    for(let i=words.length-1;i>0;i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [words[i], words[j]] = [words[j], words[i]];
+    }
+    return words;
+}
+
+let dissolveTimer = null;
+
+function startDissolve() {
+    if(dissolveActive) return;
+    if(textarea.value.trim().length === 0) return;
+    dissolveActive = true;
+    dissolveQueue  = buildDissolveQueue(textarea.value);
+    runNextDissolve();
+}
+
+function runNextDissolve() {
+    if(!dissolveActive) return;
+    if(dissolveQueue.length === 0 || textarea.value.length === 0) {
+        dissolveActive = false;
+        textarea.value = '';
+        return;
+    }
+    // Pick from queue — but recalculate the actual current position
+    // because previous removals shifted indexes
+    // Simplest: always remove a random word from what remains now
+    const words = [];
+    const regex  = /\S+\s*/g;
+    let match;
+    const text = textarea.value;
+    while((match = regex.exec(text)) !== null) {
+        words.push({ start: match.index, len: match[0].length, text: match[0] });
+    }
+    if(words.length === 0) { dissolveActive=false; textarea.value=''; return; }
+
+    // Pick random word from current text
+    const pick = words[Math.floor(Math.random()*words.length)];
+
+    // Remove it
+    textarea.value = text.slice(0,pick.start) + text.slice(pick.start+pick.len);
+
+    // Spawn particles at a semi-random position inside the card
+    const rect   = textarea.getBoundingClientRect();
+    const spawnX = rect.left + (pick.start/Math.max(text.length,1)) * rect.width * 0.8 + 12;
+    const spawnY = rect.top  + 16 + Math.random() * rect.height * 0.6;
+    // More particles for longer words
+    spawnBurst(spawnX, spawnY, 3 + Math.floor(pick.text.trim().length * 0.8));
+
+    // Schedule next removal — random delay so it feels organic, not mechanical
+    const delay = 60 + Math.random() * 90; // 60–150ms between each word burst
+    dissolveTimer = setTimeout(runNextDissolve, delay);
+}
+
+function stopDissolve() {
+    dissolveActive = false;
+    if(dissolveTimer) clearTimeout(dissolveTimer);
+    dissolveTimer = null;
+}
+
+// Idle check — starts dissolve after 3s of no typing
+let idleCheckInterval = setInterval(() => {
+    const idleSec = (Date.now() - lastTyped) / 1000;
+    if(idleSec >= 3 && !dissolveActive && textarea.value.trim().length > 0) {
+        startDissolve();
+    }
+}, 500);
+// ── [END] TEXT DISSOLVE SYSTEM ────────────────────────────────────
 
 
 // ── [START] TYPING SENSING ────────────────────────────────────────
-function handleTypingSensing() {
-    // Update both timers
-    lastActive = Date.now();
-    lastTyped  = Date.now();
+function handleTyping() {
+    lastTyped = Date.now();
     keyTimes.push(Date.now());
     userTouched = true;
+    stopDissolve(); // Stop dissolve the moment they type again
 
-    // Spawn a small burst from a random spot inside the notepad card
-    const rect = textarea.getBoundingClientRect();
-    const spawnX = rect.left + Math.random() * rect.width;
-    const spawnY = rect.top  + Math.random() * rect.height * 0.8;
-    spawnTextParticles(spawnX, spawnY, 3);
+    // Spawn small particle burst from inside the card while typing
+    const rect   = textarea.getBoundingClientRect();
+    const spawnX = rect.left + Math.random()*rect.width*0.9 + 8;
+    const spawnY = rect.top  + Math.random()*rect.height*0.7 + 8;
+    spawnBurst(spawnX, spawnY, 2);
 }
-
-textarea.addEventListener('input',   handleTypingSensing);
-textarea.addEventListener('keydown', handleTypingSensing);
-document.getElementById('editor-title').addEventListener('input', handleTypingSensing);
+textarea.addEventListener('input',   handleTyping);
+textarea.addEventListener('keydown', handleTyping);
+document.getElementById('editor-title').addEventListener('input', handleTyping);
 // ── [END] TYPING SENSING ──────────────────────────────────────────
 
 
-// ── [START] TEXT DISSOLVE FROM THE BEGINNING ─────────────────────
-// After 3s of no typing, characters are removed from the START of the text
-// Each removed character becomes particles that float up into the field
-let dissolveIndex = 0; // tracks where we are in the dissolve
-
-setInterval(() => {
-    const idleTyping = (Date.now() - lastTyped) / 1000;
-    if (idleTyping < 3) {
-        dissolveIndex = 0; // reset dissolve position if typing resumed
-        return;
+// ── [START] CARD CLICK TO WAKE ───────────────────────────────────
+card.addEventListener('click', () => {
+    userTouched = true;
+    lastTyped = Date.now();
+    stopDissolve();
+    if(currentCardOpacity < 0.65) {
+        currentCardOpacity = 0.65;
+        card.style.opacity = '0.65';
     }
-    if (textarea.value.length === 0) {
-        dissolveIndex = 0;
-        return;
+    textarea.focus();
+});
+// ── [END] CARD CLICK TO WAKE ─────────────────────────────────────
+
+
+// ── [START] SPACEBAR HOLD = INSTANT RESTORE ──────────────────────
+window.addEventListener('keydown', (e) => {
+    if(e.code === 'Space' && document.activeElement !== textarea) {
+        e.preventDefault();
+        spaceHeld = true;
     }
-
-    // Remove from the BEGINNING (not the end)
-    textarea.value = textarea.value.slice(1);
-
-    // Spawn particles from the top-left area of the card where text starts
-    const rect = textarea.getBoundingClientRect();
-    const spawnX = rect.left + 16 + Math.random() * rect.width * 0.6;
-    const spawnY = rect.top  + 24 + Math.random() * 40;
-    spawnTextParticles(spawnX, spawnY, 4);
-
-    // If fully empty, clear the dissolve index
-    if (textarea.value.length === 0) {
-        dissolveIndex = 0;
-    }
-}, 55); // ~18 characters per second dissolve rate — slow enough to watch
-// ── [END] TEXT DISSOLVE FROM THE BEGINNING ───────────────────────
+});
+window.addEventListener('keyup', (e) => {
+    if(e.code === 'Space') spaceHeld = false;
+});
+// ── [END] SPACEBAR HOLD = INSTANT RESTORE ────────────────────────
 
 
-// ── [START] MOUSE INTERACTION ─────────────────────────────────────
-// Only slow mouse movements push particles (like hand through water)
+// ── [START] MOUSE TRACKING (no effect on card ever) ──────────────
 window.addEventListener('mousemove', (e) => {
     const now = Date.now();
-    const dt  = now - lastMouseMoveTime || 1;
-    lastMouseMoveTime = now;
+    const dt  = Math.max(1, now - lastMouseTime);
+    lastMouseTime = now;
 
     mouseX = e.clientX;
     mouseY = e.clientY;
 
-    if (lastMouseX > -9000) {
+    if(lastMouseX > -9000) {
         const dx   = mouseX - lastMouseX;
         const dy   = mouseY - lastMouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        mouseSpeed = dist / dt; // px/ms
+        mouseSpeed = Math.sqrt(dx*dx + dy*dy) / dt; // px/ms
     }
-
     lastMouseX = mouseX;
     lastMouseY = mouseY;
-
-    // Moving the mouse keeps the environment awake (not the typing CPM timer)
-    lastActive = Date.now();
+    // NOTE: No lastTyped or card opacity update here — mouse never affects card
 });
-// ── [END] MOUSE INTERACTION ───────────────────────────────────────
+// ── [END] MOUSE TRACKING ─────────────────────────────────────────
 
 
-// ── HUD INTERVAL ──────────────────────────────────────────────────
-card.addEventListener('click', () => {
-    if (currentCardOpacity < 0.65) {
-        currentCardOpacity = 0.60;
-        card.style.opacity = '0.60';
-        textarea.focus();
-    }
-});
-
+// ── HUD UPDATE ────────────────────────────────────────────────────
 setInterval(() => {
     const now = Date.now();
-    keyTimes = keyTimes.filter(t => now - t < 12000);
+    keyTimes = keyTimes.filter(t => now-t < 12000);
     cpm = Math.round(keyTimes.length * 5);
-    const idle = Math.round((now - lastActive) / 1000);
-    hudState.textContent = stateName.charAt(0).toUpperCase() + stateName.slice(1);
+    const idleSec = Math.round((now - lastTyped) / 1000);
+    hudState.textContent = stateName.charAt(0).toUpperCase()+stateName.slice(1);
     hudSpeed.textContent = cpm;
-    hudIdle.textContent  = idle + 's';
+    hudIdle.textContent  = idleSec + 's';
 }, 600);
 
-// UI elements fade in after 30s
-setTimeout(() => {
-    shareBtn.classList.add('visible');
-    if (aboutLink) aboutLink.classList.add('visible');
-}, 30000);
+// UI fade in after 30s
+setTimeout(() => { shareBtn.classList.add('visible'); if(aboutLink) aboutLink.classList.add('visible'); }, 30000);
 
-// 5-min prompt
-setTimeout(() => {
-    if (!promptShown) { promptShown = true; promptOverlay.classList.add('visible'); }
-}, 5 * 60 * 1000);
+// 5-min emotional prompt
+setTimeout(() => { if(!promptShown){promptShown=true; promptOverlay.classList.add('visible');} }, 5*60*1000);
 
 
-// ── FORMSPREE ────────────────────────────────────────────────────
+// ── FORMSPREE ─────────────────────────────────────────────────────
 let selectedChoice = "";
-
-async function sendToFormspree(choice, comment = "") {
-    if (!FORMSPREE_URL || FORMSPREE_URL.includes("YOUR_ENDPOINT_ID")) return;
+async function sendToFormspree(choice, comment="") {
+    if(!FORMSPREE_URL||FORMSPREE_URL.includes("YOUR_ENDPOINT_ID")) return;
     try {
         await fetch(FORMSPREE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                feeling_choice: choice, user_comment: comment,
-                typing_speed_cpm: cpm, sanctuary_state: stateName,
-                timestamp: new Date().toISOString()
-            })
+            method:'POST',
+            headers:{'Content-Type':'application/json','Accept':'application/json'},
+            body: JSON.stringify({ feeling_choice:choice, user_comment:comment, typing_speed_cpm:cpm, sanctuary_state:stateName, timestamp:new Date().toISOString() })
         });
-    } catch(e) { console.error("Formspree error:", e); }
+    } catch(e) {}
 }
-
-// ── PROMPT BUTTONS ────────────────────────────────────────────────
 document.querySelectorAll('.prompt-choice-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         selectedChoice = btn.textContent.trim();
-        promptQuestion.style.display = 'none';
-        promptChoices.style.display  = 'none';
-        sendToFormspree(selectedChoice, "");
+        promptQuestion.style.display='none'; promptChoices.style.display='none';
+        sendToFormspree(selectedChoice,"");
         updateSessionEmotion(selectedChoice);
-        shareCard.hidden = false;
+        shareCard.hidden=false;
     });
 });
-
 document.getElementById('btn-notsure').addEventListener('click', () => {
-    selectedChoice = "Not Sure";
-    promptQuestion.style.display = 'none';
-    promptChoices.style.display  = 'none';
-    sendToFormspree(selectedChoice, "");
-    updateSessionEmotion(selectedChoice);
-    shareCard.hidden = false;
+    selectedChoice="Not Sure";
+    promptQuestion.style.display='none'; promptChoices.style.display='none';
+    sendToFormspree(selectedChoice,""); updateSessionEmotion(selectedChoice);
+    shareCard.hidden=false;
 });
-
-document.getElementById('btn-dismiss').addEventListener('click', () => {
-    promptOverlay.classList.remove('visible');
-});
+document.getElementById('btn-dismiss').addEventListener('click', () => promptOverlay.classList.remove('visible'));
 document.getElementById('btn-copy-link').addEventListener('click', async function() {
-    const text = getShareText();
-    await navigator.clipboard.writeText(text);
-    this.textContent = 'Copied ✓';
-    setTimeout(() => { this.textContent = 'Copy link'; }, 2200);
+    await navigator.clipboard.writeText(getShareText());
+    this.textContent='Copied ✓'; setTimeout(()=>{this.textContent='Copy link';},2200);
 });
-document.getElementById('btn-native-share').addEventListener('click', function() { doShare(this); });
-shareBtn.addEventListener('click', () => doShare(shareBtn));
+document.getElementById('btn-native-share').addEventListener('click', function(){ doShare(this); });
+shareBtn.addEventListener('click', ()=>doShare(shareBtn));
 
 
 // ── STATE ENGINE ──────────────────────────────────────────────────
 function updateState() {
-    const idle = (Date.now() - lastActive) / 1000;
+    const idleSec = (Date.now() - lastTyped) / 1000;
 
-    if      (idle > 18)             targetBlend = 1.0;
-    else if (idle > 8 || cpm < 30) targetBlend = 0.5;
-    else if (cpm > 160)             targetBlend = 0.0;
-    else targetBlend = Math.max(0, Math.min(0.5, 0.5 - (cpm - 30) / 260));
+    // ── Spacebar hold forces Restore immediately ──
+    if(spaceHeld) {
+        targetBlend = 1.0;
+    } else if(idleSec > 18) {
+        targetBlend = 1.0;
+    } else if(idleSec > 8 || cpm < 30) {
+        targetBlend = 0.5;
+    } else if(cpm > 160) {
+        // Fast typing: push back toward green/blue (not full flow instantly)
+        targetBlend = Math.max(0, targetBlend - 0.02);
+    } else {
+        targetBlend = Math.max(0, Math.min(0.5, 0.5 - (cpm-30)/260));
+    }
 
-    const targetCard = idle > 18 ? 0.05 : idle > 8 ? 0.52 : 1.0;
-    const waking     = targetCard > currentCardOpacity;
+    // ── Card opacity: driven by typing speed only ──
+    // Fast typing (>150 CPM) → card fades toward green/blue (more transparent)
+    // Slow or stopped → card comes back to 65%
+    // Spacebar held → card fades away
+    let targetCard;
+    if(spaceHeld) {
+        targetCard = 0.04;
+    } else if(!userTouched) {
+        targetCard = 0.0; // Never shown until first interaction
+    } else if(idleSec > 18) {
+        targetCard = 0.04;
+    } else if(idleSec > 8) {
+        targetCard = 0.52;
+    } else if(cpm > 150) {
+        // Fast typing makes card more transparent — user is in flow, don't distract
+        const speed = Math.min(cpm, 300);
+        targetCard = Math.max(0.18, 0.65 - ((speed-150)/150)*0.47);
+    } else {
+        targetCard = 0.65;
+    }
 
-    currentCardOpacity += (targetCard - currentCardOpacity) * (waking ? 0.10 : 0.014);
-    stateBlend         += (targetBlend - stateBlend)        * (waking ? 0.06 : 0.010);
+    const waking = targetCard > currentCardOpacity;
+    currentCardOpacity += (targetCard - currentCardOpacity) * (waking ? 0.08 : 0.012);
+    stateBlend         += (targetBlend - stateBlend)        * (spaceHeld ? 0.12 : waking ? 0.06 : 0.010);
 
     card.style.opacity     = currentCardOpacity.toFixed(4);
-    card.style.transform   = stateBlend < 0.25 ? 'scale(1)' : stateBlend < 0.70 ? 'scale(0.990)' : 'scale(0.982)';
-    card.style.background  = stateBlend < 0.25 ? 'rgba(8,12,18,0.60)' : stateBlend < 0.70 ? 'rgba(8,12,18,0.36)' : 'rgba(5,8,12,0.10)';
-    card.style.borderColor = stateBlend < 0.25 ? 'rgba(255,255,255,0.07)' : stateBlend < 0.70 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.012)';
+    card.style.transform   = stateBlend<0.25?'scale(1)':stateBlend<0.70?'scale(0.990)':'scale(0.982)';
+    card.style.background  = stateBlend<0.25?'rgba(8,12,18,0.60)':stateBlend<0.70?'rgba(8,12,18,0.36)':'rgba(5,8,12,0.10)';
+    card.style.borderColor = stateBlend<0.25?'rgba(255,255,255,0.07)':stateBlend<0.70?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.012)';
 
-    if      (stateBlend < 0.25) stateName = 'flow';
-    else if (stateBlend < 0.70) stateName = 'drift';
-    else                         stateName = 'restore';
+    if      (stateBlend<0.25) stateName='flow';
+    else if (stateBlend<0.70) stateName='drift';
+    else                       stateName='restore';
 }
 
 
@@ -508,17 +519,14 @@ function updateState() {
 const MAX_P = 800, TAIL = 32;
 class Particle {
     constructor() { this.init(true); }
-
     init(s) {
-        if (s) {
-            this.x = Math.random() * W;
-            this.y = Math.random() * H;
-        } else {
-            const edge = Math.floor(Math.random() * 4);
-            if      (edge === 0) { this.x = -15;    this.y = Math.random() * H; }
-            else if (edge === 1) { this.x = W + 15; this.y = Math.random() * H; }
-            else if (edge === 2) { this.x = Math.random() * W; this.y = -15; }
-            else                 { this.x = Math.random() * W; this.y = H + 15; }
+        if(s) { this.x=Math.random()*W; this.y=Math.random()*H; }
+        else {
+            const e=Math.floor(Math.random()*4);
+            if(e===0){this.x=-15;this.y=Math.random()*H;}
+            else if(e===1){this.x=W+15;this.y=Math.random()*H;}
+            else if(e===2){this.x=Math.random()*W;this.y=-15;}
+            else{this.x=Math.random()*W;this.y=H+15;}
         }
         this.vx=0; this.vy=0;
         this.spd=(0.5+Math.random()*0.7)*(1-stateBlend*0.45);
@@ -526,108 +534,92 @@ class Particle {
         this.hv=Math.random(); this.sz=0.6+Math.random()*1.4;
         this.trail=[];
     }
-
     update() {
         this.life++;
-        const slow = 1 - stateBlend * 0.52;
-        const ang  = fieldAngle(this.x, this.y, t);
-        this.vx += Math.cos(ang) * 0.068 * slow;
-        this.vy += Math.sin(ang) * 0.068 * slow;
+        const slow=1-stateBlend*0.52;
+        const ang=fieldAngle(this.x,this.y,t);
+        this.vx+=Math.cos(ang)*0.068*slow;
+        this.vy+=Math.sin(ang)*0.068*slow;
 
-        // Natural chaotic jitter
-        const jitter = 0.01 + stateBlend * 0.015;
-        this.vx += (Math.random() - 0.5) * jitter;
-        this.vy += (Math.random() - 0.5) * jitter;
+        // Natural jitter
+        const jitter=0.01+stateBlend*0.015;
+        this.vx+=(Math.random()-0.5)*jitter;
+        this.vy+=(Math.random()-0.5)*jitter;
 
         // Thermal lift in restore state
-        if (stateBlend > 0.5) {
-            this.vy -= 0.006 * (stateBlend - 0.5) * 2;
-        }
+        if(stateBlend>0.5) this.vy-=0.006*(stateBlend-0.5)*2;
 
-        // ── [START] GENTLE MOUSE PUSH (SLOW MOVES ONLY) ──────────
-        // Only activates when mouse moves slowly (like hand through water)
-        // Fast mouse moves are ignored so the space stays peaceful
-        if (mouseX > -9000 && mouseSpeed < 0.6) {
+        // ── [START] MOUSE PUSH — slow moves only, like hand through water ──
+        // mouseSpeed is in px/ms. Threshold 0.4 = 400px/s = gentle glide
+        if(mouseX > -9000 && mouseSpeed < 0.4) {
             const mdx   = this.x - mouseX;
             const mdy   = this.y - mouseY;
-            const mdist = Math.sqrt(mdx * mdx + mdy * mdy) || 1;
-            if (mdist < 160) {
-                // Strength grows as mouse slows down
-                const slowness = 1 - (mouseSpeed / 0.6);
-                const force    = (1 - mdist / 160) * 0.18 * slowness;
-                this.vx += (mdx / mdist) * force;
-                this.vy += (mdy / mdist) * force;
+            const mdist = Math.sqrt(mdx*mdx + mdy*mdy) || 1;
+            if(mdist < 180) {
+                // Force: strongest at cursor, zero at edge of 180px radius
+                // Also stronger the slower the mouse moves
+                const slowFactor = 1 - (mouseSpeed / 0.4);
+                const force = (1 - mdist/180) * 0.22 * slowFactor;
+                this.vx += (mdx/mdist) * force;
+                this.vy += (mdy/mdist) * force;
             }
         }
-        // ── [END] GENTLE MOUSE PUSH ───────────────────────────────
+        // ── [END] MOUSE PUSH ──────────────────────────────────────
 
-        const d = 0.912 + stateBlend * 0.054;
-        this.vx *= d; this.vy *= d;
-        this.trail.push({x: this.x, y: this.y});
-        if (this.trail.length > TAIL) this.trail.shift();
-        this.x += this.vx * this.spd;
-        this.y += this.vy * this.spd;
-        if (this.life > this.maxL || this.x < -90 || this.x > W + 90 || this.y < -90 || this.y > H + 90) this.init(false);
+        const d=0.912+stateBlend*0.054;
+        this.vx*=d; this.vy*=d;
+        this.trail.push({x:this.x,y:this.y});
+        if(this.trail.length>TAIL) this.trail.shift();
+        this.x+=this.vx*this.spd;
+        this.y+=this.vy*this.spd;
+        if(this.life>this.maxL||this.x<-90||this.x>W+90||this.y<-90||this.y>H+90) this.init(false);
     }
-
     draw() {
-        if (this.trail.length < 3) return;
-        const la   = Math.min(1, this.life / 50) * Math.min(1, (this.maxL - this.life) / 50);
-        const base = 0.22 + stateBlend * 0.14;
-        for (let i = 1; i < this.trail.length; i++) {
-            const f = i / this.trail.length;
+        if(this.trail.length<3) return;
+        const la=Math.min(1,this.life/50)*Math.min(1,(this.maxL-this.life)/50);
+        const base=0.22+stateBlend*0.14;
+        for(let i=1;i<this.trail.length;i++){
+            const f=i/this.trail.length;
             ctx.beginPath();
-            ctx.strokeStyle = particleColor(this.hv, f * la * base);
-            ctx.lineWidth   = f * this.sz * 1.4;
-            ctx.lineCap     = 'round';
-            ctx.moveTo(this.trail[i-1].x, this.trail[i-1].y);
-            ctx.lineTo(this.trail[i].x,   this.trail[i].y);
+            ctx.strokeStyle=particleColor(this.hv,f*la*base);
+            ctx.lineWidth=f*this.sz*1.4; ctx.lineCap='round';
+            ctx.moveTo(this.trail[i-1].x,this.trail[i-1].y);
+            ctx.lineTo(this.trail[i].x,this.trail[i].y);
             ctx.stroke();
         }
     }
 }
-// Safe particle array — always exactly MAX_P entries
-const particles = Array.from({length: MAX_P}, () => new Particle());
+const particles = Array.from({length:MAX_P}, ()=>new Particle());
 
 
 // ── BREATHING GLOW ────────────────────────────────────────────────
-setInterval(() => {
-    glowTargetX = (Math.random() - 0.5) * W * 0.12;
-    glowTargetY = (Math.random() - 0.5) * H * 0.10;
-}, 6000);
+setInterval(()=>{ glowTargetX=(Math.random()-0.5)*W*0.12; glowTargetY=(Math.random()-0.5)*H*0.10; }, 6000);
 
 function drawBreath() {
-    const vis = Math.max(0, (stateBlend - 0.2) / 0.8);
-    if (vis < 0.01) return;
-
-    glowOffsetX += (glowTargetX - glowOffsetX) * 0.002;
-    glowOffsetY += (glowTargetY - glowOffsetY) * 0.002;
-
-    breathPhase += 0.0018;
-    const pulse  = Math.pow(Math.sin(breathPhase) * 0.5 + 0.5, 1.6);
-    const radius = Math.min(W, H) * (0.16 + pulse * 0.09);
-    const alpha  = vis * 0.038 * (0.3 + pulse * 0.7);
-    const cx     = W / 2 + glowOffsetX;
-    const cy     = H / 2 + glowOffsetY;
-    const hue    = 38 + (1 - stateBlend) * 122;
-
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    g.addColorStop(0,   `hsla(${hue},60%,58%,${alpha.toFixed(4)})`);
-    g.addColorStop(0.4, `hsla(${hue},48%,40%,${(alpha * 0.35).toFixed(4)})`);
-    g.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.beginPath();
-    ctx.fillStyle = g;
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
+    const vis=Math.max(0,(stateBlend-0.2)/0.8);
+    if(vis<0.01) return;
+    glowOffsetX+=(glowTargetX-glowOffsetX)*0.002;
+    glowOffsetY+=(glowTargetY-glowOffsetY)*0.002;
+    breathPhase+=0.0018;
+    const pulse=Math.pow(Math.sin(breathPhase)*0.5+0.5,1.6);
+    const radius=Math.min(W,H)*(0.16+pulse*0.09);
+    const alpha=vis*0.038*(0.3+pulse*0.7);
+    const cx=W/2+glowOffsetX, cy=H/2+glowOffsetY;
+    const hue=38+(1-stateBlend)*122;
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,radius);
+    g.addColorStop(0,`hsla(${hue},60%,58%,${alpha.toFixed(4)})`);
+    g.addColorStop(0.4,`hsla(${hue},48%,40%,${(alpha*0.35).toFixed(4)})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.fillStyle=g;
+    ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.fill();
 }
 
 function drawVignette() {
-    const str = 0.42 + stateBlend * 0.22;
-    const g   = ctx.createRadialGradient(W/2, H/2, H*0.30, W/2, H/2, H*0.92);
-    g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, `rgba(2,4,6,${str.toFixed(3)})`);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    const str=0.42+stateBlend*0.22;
+    const g=ctx.createRadialGradient(W/2,H/2,H*0.30,W/2,H/2,H*0.92);
+    g.addColorStop(0,'rgba(0,0,0,0)');
+    g.addColorStop(1,`rgba(2,4,6,${str.toFixed(3)})`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
 }
 
 
@@ -636,23 +628,22 @@ function loop() {
     t += 0.003;
     updateState();
 
-    // Clear with fade trail
-    const fade = 0.030 + (1 - stateBlend) * 0.030;
-    ctx.fillStyle = `rgba(2,4,6,${fade.toFixed(4)})`;
-    ctx.fillRect(0, 0, W, H);
+    const fade=0.030+(1-stateBlend)*0.030;
+    ctx.fillStyle=`rgba(2,4,6,${fade.toFixed(4)})`;
+    ctx.fillRect(0,0,W,H);
 
-    // Background particles — capped safely at MAX_P
-    const active = Math.min(particles.length, Math.floor(MAX_P * (0.72 + (1 - stateBlend) * 0.28)));
-    for (let i = 0; i < active; i++) {
+    // Background field particles — safe cap at array size
+    const active=Math.min(particles.length, Math.floor(MAX_P*(0.72+(1-stateBlend)*0.28)));
+    for(let i=0;i<active;i++){
         particles[i].update();
         particles[i].draw();
     }
 
-    // Text dissolve particles — remove dead ones each frame
-    for (let i = textParticles.length - 1; i >= 0; i--) {
+    // Text dissolve particles
+    for(let i=textParticles.length-1;i>=0;i--){
         textParticles[i].update();
         textParticles[i].draw();
-        if (textParticles[i].isDead()) textParticles.splice(i, 1);
+        if(textParticles[i].isDead()) textParticles.splice(i,1);
     }
 
     drawBreath();
