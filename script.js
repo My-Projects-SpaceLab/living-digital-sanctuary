@@ -376,23 +376,24 @@ function stopDissolve() {
 
 
 // ── [START] TYPING SENSING ────────────────────────────────────────
+let lastKeyEvent = 0;
+
 function handleTyping() {
     const now = Date.now();
+    if (now - lastKeyEvent < 40) return; // throttle noise
+    lastKeyEvent = now;
 
     lastTyped = now;
     keyTimes.push(now);
     userTouched = true;
 
     stopDissolve();
-
-    // 🔵 KEY FIX: typing state lock
     isTyping = true;
 
-    if (typingCooldownTimer) clearTimeout(typingCooldownTimer);
-
+    clearTimeout(typingCooldownTimer);
     typingCooldownTimer = setTimeout(() => {
         isTyping = false;
-    }, 900); // 0.9s no typing = considered idle
+    }, 4000);
 }
     lastTyped = Date.now();
     keyTimes.push(Date.now());
@@ -409,9 +410,9 @@ document.getElementById('editor-title').addEventListener('input', handleTyping);
 card.addEventListener('click', () => {
     userTouched = true;
     stopDissolve();
-    if(currentCardOpacity < 0.65) {
-        currentCardOpacity = 0.65;
-        card.style.opacity = '0.65';
+    if(currentCardOpacity < 0.7) {
+        currentCardOpacity = 0.7;
+        card.style.opacity = '0.7';
     }
     textarea.focus();
 });
@@ -537,14 +538,14 @@ function updateState() {
     if(spaceHeld) {
         targetCard = 0.04;
     } else if(!userTouched) {
-        targetCard = 0.75; // Never shown until first interaction
+        targetCard = 0.65; // Never shown until first interaction
     } else if(idleSec > 16) {
         targetCard = 0.04;
     } else if(idleSec > 8 && !isTyping) {
         targetCard = 0.55;
     } else if(cpm > 150) {
         // Fast typing makes card more transparent — user is in flow, don't distract
-        const speed = Math.min(cpm, 300);
+        const speed = Math.min(Math.max(cpm, 0), 180);
         targetCard = Math.max(0.16, 0.65 - ((speed-150)/150)*0.47);
     } else {
         targetCard = 0.65;
