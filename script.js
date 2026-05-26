@@ -148,7 +148,12 @@ function safeEndSession() {
     endSession();
 }
 
+// Fixed syntax layout block here (removed stray bracket/brace)
 window.addEventListener("pagehide", safeEndSession);
+window.addEventListener("beforeunload", safeEndSession);
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+        safeEndSession();
     }
 });
 // ── [END] DEVICE, SESSION & METRIC SIGNALS ────────────────────────
@@ -213,21 +218,103 @@ setInterval(() => {
     }, 1200);
 }, 5000);
 
-// ── INTERACTION SENSING ───────────────────────────────────────────
+// ── INTERACTION SENSING & TEXT PARTICLES ──────────────────────────
 let lastActive  = Date.now();
 let keyTimes    = [];
 let cpm         = 0;
 let promptShown = false;
 let userTouched = false; // tracks if user ever typed
 
-function recordActivity() {
+// ── [START] TEXT-TO-PARTICLES SYSTEM ──
+const textParticles = [];
+
+class TextParticle {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        // Start moving slowly upwards and outwards
+        this.vx = (Math.random() - 0.5) * 1.4;
+        this.vy = -Math.random() * 1.5 - 0.4;
+        this.spd = (0.6 + Math.random() * 0.6) * (1 - stateBlend * 0.35);
+        this.life = 0;
+        this.maxL = 100 + Math.random() * 120;
+        this.hv = Math.random();
+        this.sz = 0.8 + Math.random() * 1.2;
+        this.trail = [];
+    }
+    update(t) {
+        this.life++;
+        
+        // Blend initial upward movement into the wind flow field direction
+        const windWeight = Math.min(1, this.life / 25);
+        const windAng = fieldAngle(this.x, this.y, t);
+        const windVx = Math.cos(windAng) * 0.068 * (1 - stateBlend * 0.52);
+        const windVy = Math.sin(windAng) * 0.068 * (1 - stateBlend * 0.52);
+
+        this.vx = this.vx * (1 - windWeight * 0.06) + windVx * windWeight;
+        this.vy = this.vy * (1 - windWeight * 0.06) + windVy * windWeight;
+
+        // Add natural chaotic drift jitter
+        const jitter = 0.01 + stateBlend * 0.015;
+        this.vx += (Math.random() - 0.5) * jitter;
+        this.vy += (Math.random() - 0.5) * jitter;
+
+        // Thermal lift in the restore state
+        if (stateBlend > 0.5) {
+            const lift = (stateBlend - 0.5) * 2;
+            this.vy -= 0.006 * lift;
+        }
+
+        const d = 0.912 + stateBlend * 0.054;
+        this.vx *= d; this.vy *= d;
+        
+        this.trail.push({x: this.x, y: this.y});
+        if (this.trail.length > 24) this.trail.shift();
+        
+        this.x += this.vx * this.spd;
+        this.y += this.vy * this.spd;
+    }
+    draw() {
+        if (this.trail.length < 3) return;
+        const la = Math.min(1, this.life / 20) * Math.min(1, (this.maxL - this.life) / 30);
+        // Brighter base opacity for typed text particles
+        const base = (0.28 + stateBlend * 0.12) * la;
+        for (let i = 1; i < this.trail.length; i++) {
+            const f = i / this.trail.length;
+            ctx.beginPath();
+            ctx.strokeStyle = particleColor(this.hv, f * base);
+            ctx.lineWidth = f * this.sz * 1.4;
+            ctx.lineCap = 'round';
+            ctx.moveTo(this.trail[i-1].x, this.trail[i-1].y);
+            ctx.lineTo(this.trail[i].x, this.trail[i].y);
+            ctx.stroke();
+        }
+    }
+}
+
+function handleTypingSensing(e) {
     lastActive = Date.now();
     keyTimes.push(Date.now());
     userTouched = true;
+
+    // Spawn text particles inside the card notepad area
+    if (textParticles.length < 250) {
+        const rect = textarea.getBoundingClientRect();
+        // Spawn from a random spot inside the notepad boundaries
+        const spawnX = rect.left + Math.random() * rect.width;
+        const spawnY = rect.top + Math.random() * rect.height;
+        
+        // Spawn 3 particles per keystroke
+        for (let i = 0; i < 3; i++) {
+            textParticles.push(new TextParticle(spawnX, spawnY));
+        }
+    }
 }
-textarea.addEventListener('input', recordActivity);
-textarea.addEventListener('keydown', recordActivity);
-document.getElementById('editor-title').addEventListener('input', recordActivity);
+
+textarea.addEventListener('input', handleTypingSensing);
+textarea.addEventListener('keydown', handleTypingSensing);
+document.getElementById('editor-title').addEventListener('input', handleTypingSensing);
+// ── [END] TEXT-TO-PARTICLES SYSTEM ──
 
 // Clicking the dimmed card bumps it to 60% and focuses textarea
 card.addEventListener('click', () => {
@@ -507,8 +594,21 @@ function loop() {
     const fade=0.030+(1-stateBlend)*0.030;
     ctx.fillStyle=`rgba(2,4,6,${fade.toFixed(4)})`;
     ctx.fillRect(0,0,W,H);
-    const active=Math.floor(MAX_P*(0.72+(1-stateBlend)*0.28));
+    
+    const active=Math.floor(MAX_P*(0.72+(1-stateBlend*0.28)));
     for(let i=0;i<active;i++){particles[i].update(t);particles[i].draw();}
+    
+    // ── [START] UPDATE & DRAW TYPED TEXT PARTICLES ──
+    for (let i = textParticles.length - 1; i >= 0; i--) {
+        const tp = textParticles[i];
+        tp.update(t);
+        tp.draw();
+        if (tp.life > tp.maxL || tp.x < -90 || tp.x > W + 90 || tp.y < -90 || tp.y > H + 90) {
+            textParticles.splice(i, 1);
+        }
+    }
+    // ── [END] UPDATE & DRAW TYPED TEXT PARTICLES ──
+    
     drawBreath();
     drawVignette();
     requestAnimationFrame(loop);
