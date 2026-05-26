@@ -8,6 +8,8 @@ const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
 let stateBlend         = 0;
 let targetBlend        = 0;
 let stateName          = 'flow';
+let isTyping = false;
+let typingCooldownTimer = null;
 let currentCardOpacity = 0.7; // starts invisible, wakes on first keypress
 
 // Separate timers: typing only vs general
@@ -265,7 +267,7 @@ let dissolveQueue = [];
 
 // ── IDLE CHECK ────────────────────────────────────────────────────
 let idleCheckInterval = setInterval(() => {
-    const idleSec = (Date.now() - lastTyped) / 1000;
+    const idleSec = isTyping ? 0 : (Date.now() - lastTyped) / 1000;
 
     if (
         idleSec >= 3 &&
@@ -375,6 +377,23 @@ function stopDissolve() {
 
 // ── [START] TYPING SENSING ────────────────────────────────────────
 function handleTyping() {
+    const now = Date.now();
+
+    lastTyped = now;
+    keyTimes.push(now);
+    userTouched = true;
+
+    stopDissolve();
+
+    // 🔵 KEY FIX: typing state lock
+    isTyping = true;
+
+    if (typingCooldownTimer) clearTimeout(typingCooldownTimer);
+
+    typingCooldownTimer = setTimeout(() => {
+        isTyping = false;
+    }, 900); // 0.9s no typing = considered idle
+}
     lastTyped = Date.now();
     keyTimes.push(Date.now());
     userTouched = true;
@@ -390,7 +409,6 @@ document.getElementById('editor-title').addEventListener('input', handleTyping);
 // ── [START] CARD CLICK TO WAKE ───────────────────────────────────
 card.addEventListener('click', () => {
     userTouched = true;
-    lastTyped = Date.now();
     stopDissolve();
     if(currentCardOpacity < 0.65) {
         currentCardOpacity = 0.65;
@@ -490,8 +508,13 @@ shareBtn.addEventListener('click', ()=>doShare(shareBtn));
 
 
 // ── STATE ENGINE ──────────────────────────────────────────────────
+function getTrueIdleSeconds() {
+    if (isTyping) return 0;
+    return (Date.now() - lastTyped) / 1000;
+}
+
 function updateState() {
-    const idleSec = (Date.now() - lastTyped) / 1000;
+    const idleSec = getTrueIdleSeconds();
 
     // ── Spacebar hold forces Restore immediately ──
     if(spaceHeld) {
@@ -518,7 +541,7 @@ function updateState() {
         targetCard = 0.75; // Never shown until first interaction
     } else if(idleSec > 16) {
         targetCard = 0.04;
-    } else if(idleSec > 8) {
+    } else if(idleSec > 8 && !isTyping) {
         targetCard = 0.55;
     } else if(cpm > 150) {
         // Fast typing makes card more transparent — user is in flow, don't distract
