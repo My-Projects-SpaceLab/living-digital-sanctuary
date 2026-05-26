@@ -7,13 +7,14 @@ const SUPABASE_KEY = "sb_publishable_3t70TIXLzaJTj1CngUDVzQ_yOQ91uHw";
 const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
 // ──────────────────────────────────────────────────────────────────
 
-// ── GLOBAL STATE VARIABLES (At top to prevent ReferenceErrors) ─────
+// ── GLOBAL STATE VARIABLES (At top to prevent hoisting errors) ────
 let stateBlend         = 0;
 let targetBlend        = 0;
 let stateName          = 'flow';
 let currentCardOpacity = 1.0;
 
-let lastActive  = Date.now();
+let lastActive  = Date.now(); // General activity (mouse + typing)
+let lastTyped   = Date.now(); // Typing activity only (for 3s dissolve)
 let keyTimes    = [];
 let cpm         = 0;
 let promptShown = false;
@@ -315,7 +316,9 @@ class TextParticle {
 }
 
 function handleTypingSensing(e) {
+    // Record general active state and log typing CPM timestamp
     recordActivity();
+    lastTyped = Date.now(); // Reset typing timer
 
     // Spawn visual text particles inside the card notepad area
     if (textParticles.length < 250) {
@@ -336,8 +339,8 @@ document.getElementById('editor-title').addEventListener('input', handleTypingSe
 // ── [START] 3-SECOND TEXT DISSOLVE SYSTEM ──
 // Deletes text character-by-character if idle for 3 seconds, releasing particles
 setInterval(() => {
-    const idle = (Date.now() - lastActive) / 1000;
-    if (idle >= 3 && textarea.value.length > 0) {
+    const idleTyping = (Date.now() - lastTyped) / 1000;
+    if (idleTyping >= 3 && textarea.value.length > 0) {
         const text = textarea.value;
         textarea.value = text.slice(0, -1);
         
@@ -377,8 +380,8 @@ window.addEventListener('mousemove', (e) => {
     lastMouseX = mouseX;
     lastMouseY = mouseY;
     
-    // Register activity on mouse move to reset idle timers
-    recordActivity();
+    // Register activity on mouse move to keep notepad open, but do NOT increment typing speeds
+    lastActive = Date.now();
 });
 // ── [END] SLOW MOUSE INTERACTION SENSING ──
 
