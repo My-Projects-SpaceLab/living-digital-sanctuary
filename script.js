@@ -255,89 +255,122 @@ function spawnBurst(x, y, count) {
     for(let i=0;i<count;i++) textParticles.push(new TextParticle(x, y));
 }
 
-// ── [START] TEXT DISSOLVE SYSTEM ─────────────────────────────────
-// After 3s idle: words are removed in RANDOM ORDER, quickly,
-// each word spawning a particle burst. Not sequential. Not backspace.
+// ── [START] TEXT DISSOLVE SYSTEM (INDEX-BASED SNAPSHOT ENGINE) ──
+
 let dissolveActive = false;
-let dissolveQueue  = []; // shuffled list of char-index ranges to remove
-
-function buildDissolveQueue(text) {
-    // Split into words with their positions, then shuffle randomly
-    const words = [];
-    const regex  = /\S+\s*/g;
-    let match;
-    while((match = regex.exec(text)) !== null) {
-        words.push({ start: match.index, len: match[0].length });
-    }
-    // Fisher-Yates shuffle so removal order is completely unpredictable
-    for(let i=words.length-1;i>0;i--) {
-        const j = Math.floor(Math.random()*(i+1));
-        [words[i], words[j]] = [words[j], words[i]];
-    }
-    return words;
-}
-
 let dissolveTimer = null;
 
-function startDissolve() {
-    if(dissolveActive) return;
-    if(textarea.value.trim().length === 0) return;
-    dissolveActive = true;
-    dissolveQueue  = buildDissolveQueue(textarea.value);
-    runNextDissolve();
-}
+let dissolveSnapshot = "";
+let dissolveQueue = [];
 
-function runNextDissolve() {
-    if(!dissolveActive) return;
-    if(dissolveQueue.length === 0 || textarea.value.length === 0) {
-        dissolveActive = false;
-        textarea.value = '';
-        return;
-    }
-    // Pick from queue — but recalculate the actual current position
-    // because previous removals shifted indexes
-    // Simplest: always remove a random word from what remains now
-    const words = [];
-    const regex  = /\S+\s*/g;
-    let match;
-    const text = textarea.value;
-    while((match = regex.exec(text)) !== null) {
-        words.push({ start: match.index, len: match[0].length, text: match[0] });
-    }
-    if(words.length === 0) { dissolveActive=false; textarea.value=''; return; }
-
-    // Pick random word from current text
-    const pick = words[Math.floor(Math.random()*words.length)];
-
-    // Remove it
-    textarea.value = text.slice(0,pick.start) + text.slice(pick.start+pick.len);
-
-    // Spawn particles at a semi-random position inside the card
-    const rect   = textarea.getBoundingClientRect();
-    const spawnX = rect.left + (pick.start/Math.max(text.length,1)) * rect.width * 0.8 + 12;
-    const spawnY = rect.top  + 16 + Math.random() * rect.height * 0.6;
-    // More particles for longer words
-    spawnBurst(spawnX, spawnY, 3 + Math.floor(pick.text.trim().length * 0.8));
-
-    // Schedule next removal — random delay so it feels organic, not mechanical
-    const delay = 60 + Math.random() * 90; // 60–150ms between each word burst
-    dissolveTimer = setTimeout(runNextDissolve, delay);
-}
-
-function stopDissolve() {
-    dissolveActive = false;
-    if(dissolveTimer) clearTimeout(dissolveTimer);
-    dissolveTimer = null;
-}
-
-// Idle check — starts dissolve after 3s of no typing
+// ── IDLE CHECK ────────────────────────────────────────────────────
 let idleCheckInterval = setInterval(() => {
     const idleSec = (Date.now() - lastTyped) / 1000;
-    if(idleSec >= 3 && !dissolveActive && textarea.value.trim().length > 0) {
+
+    if (
+        idleSec >= 3 &&
+        !dissolveActive &&
+        textarea.value.trim().length > 0
+    ) {
         startDissolve();
     }
 }, 500);
-// ── [END] TEXT DISSOLVE SYSTEM ────────────────────────────────────
+
+
+// ── BUILD WORD QUEUE (INDEXED SNAPSHOT) ──────────────────────────
+function buildDissolveQueue(text) {
+    const words = [];
+    const regex = /\S+\s*/g;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        words.push({
+            text: match[0],
+            start: match.index,
+            len: match[0].length
+        });
+    }
+
+    return words;
+}
+
+
+// ── START DISSOLVE ───────────────────────────────────────────────
+function startDissolve() {
+    if (dissolveActive) return;
+
+    const text = textarea.value;
+    if (!text.trim()) return;
+
+    dissolveActive = true;
+
+    // SNAPSHOT (freeze once)
+    dissolveSnapshot = text;
+
+    // build indexed queue once
+    dissolveQueue = buildDissolveQueue(dissolveSnapshot);
+
+    runNextDissolve();
+}
+
+
+// ── RUN ONE DISSOLVE STEP ─────────────────────────────────────────
+function runNextDissolve() {
+    if (!dissolveActive) return;
+
+    // stop condition
+    if (dissolveQueue.length === 0 || !dissolveSnapshot.trim()) {
+        dissolveActive = false;
+        textarea.value = "";
+        return;
+    }
+
+    // pick random WORD INDEX
+    const pickIndex = Math.floor(Math.random() * dissolveQueue.length);
+    const pick = dissolveQueue[pickIndex];
+
+    const textBefore = dissolveSnapshot;
+
+    // get position for particles (approx visual randomness)
+    const rect = textarea.getBoundingClientRect();
+
+    spawnBurst(
+        rect.left + Math.random() * rect.width,
+        rect.top + Math.random() * rect.height,
+        3 + Math.floor(pick.text.trim().length * 0.9)
+    );
+
+    // ── REMOVE WORD BY INDEX (NO replace, NO backspace) ───────────
+    dissolveSnapshot =
+        textBefore.slice(0, pick.start) +
+        textBefore.slice(pick.start + pick.len);
+
+    // remove from queue
+    dissolveQueue.splice(pickIndex, 1);
+
+    // IMPORTANT: update remaining word indices
+    for (let i = pickIndex; i < dissolveQueue.length; i++) {
+        dissolveQueue[i].start -= pick.len;
+    }
+
+    // next frame
+    const delay = 60 + Math.random() * 90;
+    dissolveTimer = setTimeout(runNextDissolve, delay);
+}
+
+
+// ── STOP DISSOLVE ────────────────────────────────────────────────
+function stopDissolve() {
+    dissolveActive = false;
+
+    if (dissolveTimer) {
+        clearTimeout(dissolveTimer);
+        dissolveTimer = null;
+    }
+
+    dissolveQueue = [];
+}
+// ── END SYSTEM ───────────────────────────────────────────────────
 
 
 // ── [START] TYPING SENSING ────────────────────────────────────────
@@ -347,11 +380,6 @@ function handleTyping() {
     userTouched = true;
     stopDissolve(); // Stop dissolve the moment they type again
 
-    // Spawn small particle burst from inside the card while typing
-    const rect   = textarea.getBoundingClientRect();
-    const spawnX = rect.left + Math.random()*rect.width*0.9 + 8;
-    const spawnY = rect.top  + Math.random()*rect.height*0.7 + 8;
-    spawnBurst(spawnX, spawnY, 2);
 }
 textarea.addEventListener('input',   handleTyping);
 textarea.addEventListener('keydown', handleTyping);
