@@ -7,7 +7,7 @@ const SUPABASE_KEY = "sb_publishable_3t70TIXLzaJTj1CngUDVzQ_yOQ91uHw";
 const FORMSPREE_URL = "https://formspree.io/f/YOUR_ENDPOINT_ID";
 // ──────────────────────────────────────────────────────────────────
 
-// ── GLOBAL STATE VARIABLES (Moved to top to prevent ReferenceErrors) ──
+// ── GLOBAL STATE VARIABLES (At top to prevent ReferenceErrors) ─────
 let stateBlend         = 0;
 let targetBlend        = 0;
 let stateName          = 'flow';
@@ -172,7 +172,6 @@ function safeEndSession() {
     endSession();
 }
 
-// Fixed syntax layout block here
 window.addEventListener("pagehide", safeEndSession);
 window.addEventListener("beforeunload", safeEndSession);
 document.addEventListener("visibilitychange", () => {
@@ -664,8 +663,14 @@ function loop() {
     ctx.fillStyle=`rgba(2,4,6,${fade.toFixed(4)})`;
     ctx.fillRect(0,0,W,H);
     
-    const active=Math.floor(MAX_P*(0.72+(1-stateBlend*0.28)));
-    for(let i=0;i<active;i++){particles[i].update(t);particles[i].draw();}
+    // SAFETY CHECK: Ensure we never exceed particle array bounds
+    const active = Math.min(particles.length, Math.floor(MAX_P * (0.72 + (1 - stateBlend) * 0.28)));
+    for(let i=0;i<active;i++){
+        if (particles[i]) {
+            particles[i].update(t);
+            particles[i].draw();
+        }
+    }
     
     // ── [START] UPDATE & DRAW TYPED TEXT PARTICLES ──
     for (let i = textParticles.length - 1; i >= 0; i--) {
