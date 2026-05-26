@@ -395,49 +395,15 @@ window.addEventListener('mousemove', (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
 
-    if(mouseX > -9000) {
-
-    const dx = this.x - mouseX;
-    const dy = this.y - mouseY;
-
-    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-
-    const radius = 220;
-
-    if(dist < radius) {
-
-        // normalized direction away from cursor
-        const nx = dx / dist;
-        const ny = dy / dist;
-
-        // stronger near cursor
-        const falloff = 1 - dist / radius;
-
-        // cursor movement direction
-        const mvx = mouseX - lastMouseX;
-        const mvy = mouseY - lastMouseY;
-
-        // push force
-        const push = falloff * 0.65;
-
-        // wake force (dragging flow behind cursor)
-        const wake = 0.03;
-
-        // swirl around cursor
-        const swirl = 0.12 * falloff;
-
-        this.vx += nx * push;
-        this.vy += ny * push;
-
-        // cursor motion drags nearby particles
-        this.vx += mvx * wake * falloff;
-        this.vy += mvy * wake * falloff;
-
-        // tangential swirl
-        this.vx += -ny * swirl;
-        this.vy +=  nx * swirl;
+    if(lastMouseX > -9000) {
+        const dx   = mouseX - lastMouseX;
+        const dy   = mouseY - lastMouseY;
+        mouseSpeed = Math.sqrt(dx*dx + dy*dy) / dt; // px/ms
     }
-}
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+    // NOTE: No lastTyped or card opacity update here — mouse never affects card
+});
 // ── [END] MOUSE TRACKING ─────────────────────────────────────────
 
 
@@ -521,7 +487,7 @@ function updateState() {
     if(spaceHeld) {
         targetCard = 0.04;
     } else if(!userTouched) {
-        targetCard = 0.; // Never shown until first interaction
+        targetCard = 0.65; // Never shown until first interaction
     } else if(idleSec > 18) {
         targetCard = 0.04;
     } else if(idleSec > 8) {
@@ -585,23 +551,55 @@ class Particle {
 
         // ── [START] MOUSE PUSH — slow moves only, like hand through water ──
         // mouseSpeed is in px/ms. Threshold 0.4 = 400px/s = gentle glide
-        if(mouseX > -9000 && mouseSpeed < 0.4) {
-            const mdx   = this.x - mouseX;
-            const mdy   = this.y - mouseY;
-            const mdist = Math.sqrt(mdx*mdx + mdy*mdy) || 1;
-            if(mdist < 180) {
-                // Force: strongest at cursor, zero at edge of 180px radius
-                // Also stronger the slower the mouse moves
-                const slowFactor = 1 - (mouseSpeed / 0.4);
-                const force = (1 - mdist/180) * 0.22 * slowFactor;
-                this.vx += (mdx/mdist) * force;
-                this.vy += (mdy/mdist) * force;
-            }
-        }
+        if(mouseX > -9000) {
+
+    const dx = this.x - mouseX;
+    const dy = this.y - mouseY;
+
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+
+    const radius = 220;
+
+    if(dist < radius) {
+
+        // normalized direction away from cursor
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        // stronger near cursor
+        const falloff = 1 - dist / radius;
+
+        // cursor movement direction
+        const mvx = mouseX - lastMouseX;
+        const mvy = mouseY - lastMouseY;
+
+        // push force
+        const push = falloff * 0.65;
+
+        // wake force (dragging flow behind cursor)
+        const wake = 0.03;
+
+        // swirl around cursor
+        const swirl = 0.12 * falloff;
+
+        this.vx += nx * push;
+        this.vy += ny * push;
+
+        // cursor motion drags nearby particles
+        this.vx += mvx * wake * falloff;
+        this.vy += mvy * wake * falloff;
+
+        // tangential swirl
+        this.vx += -ny * swirl;
+        this.vy +=  nx * swirl;
+    }
+}
         // ── [END] MOUSE PUSH ──────────────────────────────────────
 
         const d=0.912+stateBlend*0.054;
         this.vx*=d; this.vy*=d;
+        this.vx = Math.max(-2, Math.min(2, this.vx));
+        this.vy = Math.max(-2, Math.min(2, this.vy));
         this.trail.push({x:this.x,y:this.y});
         if(this.trail.length>TAIL) this.trail.shift();
         this.x+=this.vx*this.spd;
